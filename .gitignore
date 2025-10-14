@@ -1,0 +1,26 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Database and runtime data
+*.sqlite3
+*.db
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+New Text Document*.txt

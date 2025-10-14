@@ -46,3 +46,11 @@ Primo Christian C. Montejo  |	Junior Developer    |	primochristian.montejo@cit.e
 
 🌐 Deployed Link
 (To be added once deployment is complete)
+## Developer Setup
+
+1. Create a virtual environment (recommended `python -m venv .venv`) and activate it.
+2. Install dependencies: `pip install -r requirements.txt` (or matching instructions once requirements are defined).
+3. Copy `.env.example` to `.env` and fill in local secrets.
+4. Apply migrations: `python manage.py migrate`.
+5. Run the server: `python manage.py runserver`.
+
