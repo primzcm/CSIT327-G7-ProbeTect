@@ -2,6 +2,11 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-10-15 - Landing page cleanup
+
+- Marketing: Removed pricing/features nav links and stripped out the pricing plans section from `templates/blog/home.html` to focus on the free experience.
+- UX: Added a progress indicator and submission state handling to the quiz generation form in `templates/materials/upload.html`.
+
 ## 2025-09-27 - Quiz UX polish & Gemini update
 
 - Quizzes: Added list/detail templates so users can view and take generated quizzes.
