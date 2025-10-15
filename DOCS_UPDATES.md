@@ -2,10 +2,11 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
-## 2025-10-15 - Landing page cleanup
+## 2025-10-15 - Landing page updates
 
-- Marketing: Removed pricing/features nav links and stripped out the pricing plans section from `templates/blog/home.html` to focus on the free experience.
-- UX: Added a progress indicator and submission state handling to the quiz generation form in `templates/materials/upload.html`.
+- Landing: Took out the pricing buttons and the pricing section on the home page so the focus stays on the free workflow.
+- Quizzes: When you click “Generate quiz” on the upload page, the button now shows a loading bar and disables itself until the request finishes.
+- Accessibility: Added a “Skip to main content” shortcut for keyboard users, a quick note under the instructor sign-up button, and small badges on the feature cards while still loading Tailwind from the CDN script.
 
 ## 2025-09-27 - Quiz UX polish & Gemini update
 
