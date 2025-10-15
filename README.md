@@ -16,7 +16,7 @@ Key capabilities:
 ## Setup & Run
 1. **Clone & environment:**  
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/primzcm/CSIT327-G7-ProbeTect
    cd ProbeTect
    python -m venv .venv
    .venv\Scripts\activate  # or source .venv/bin/activate on macOS/Linux
