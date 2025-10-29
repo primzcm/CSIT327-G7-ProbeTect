@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block head_extra %}
   {{ block.super }}
@@ -23,9 +24,12 @@
         <a href="{% url 'signup_student' %}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm transition hover:bg-indigo-500">Try it free</a>
         <a href="#how-it-works" class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-6 py-3 text-base font-medium text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">See how it works</a>
       </div>
-      <p class="mt-6 flex items-center justify-center gap-2 text-sm text-slate-500 md:justify-start">
-        <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
-        <span>No credit card required - Works with lecture notes and syllabi</span>
+      <p class="mt-6 flex flex-col items-center gap-2 text-sm md:flex-row md:items-center md:justify-start">
+        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 font-semibold">
+          <span class="animate-pulse" aria-hidden="true">🚀</span>
+          Free for students — get started in 30s
+        </span>
+        <span class="text-slate-500 md:ml-3">Works with PDFs, slides, and lecture notes.</span>
       </p>
     </div>
     <div class="relative w-full md:w-1/2">
@@ -105,24 +109,24 @@
       </div>
       <div class="grid gap-6 md:grid-cols-2">
         <div class="rounded-2xl bg-slate-800/70 p-4">
-          <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-lg text-indigo-300" aria-hidden="true">SL</span>
-          <h3 class="text-lg font-semibold">Subject libraries</h3>
-          <p class="mt-2 text-sm text-slate-300">Tag uploads, track quiz history, and organise by class or exam board.</p>
+          <img src="{% static 'img/book.jpg' %}" alt="ProbeTect logo" class="mb-3 inline-block h-10 w-10 rounded-full object-cover" aria-hidden="true" />
+          <h3 class="text-lg font-semibold">Smart Libraries</h3>
+          <p class="mt-2 text-sm text-slate-300">Upload lessons, tag them by subject, and auto-generate quizzes from your files in seconds.</p>
         </div>
         <div class="rounded-2xl bg-slate-800/70 p-4">
-          <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-lg text-indigo-300" aria-hidden="true">AQ</span>
-          <h3 class="text-lg font-semibold">Adaptive quizzes</h3>
-          <p class="mt-2 text-sm text-slate-300">Mix MCQ, short answer, and matching questions tuned to your weak areas.</p>
+          <img src="{% static 'img/ai.png' %}" alt="ProbeTect logo" class="mb-3 inline-block h-10 w-10 rounded-full object-cover" aria-hidden="true" />
+          <h3 class="text-lg font-semibold">AI-Generated Quizzes</h3>
+          <p class="mt-2 text-sm text-slate-300">Create adaptive quizzes that mix multiple-choice, true/false, and fill-in-the-blank questions.</p>
         </div>
         <div class="rounded-2xl bg-slate-800/70 p-4">
-          <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-lg text-indigo-300" aria-hidden="true">LP</span>
-          <h3 class="text-lg font-semibold">Lesson planning</h3>
-          <p class="mt-2 text-sm text-slate-300">Translate quiz results into actionable study plans with calendar integration.</p>
+          <img src="{% static 'img/library.jpg' %}" alt="ProbeTect logo" class="mb-3 inline-block h-10 w-10 rounded-full object-cover" aria-hidden="true" />
+          <h3 class="text-lg font-semibold">Lesson Planner</h3>
+          <p class="mt-2 text-sm text-slate-300">Turn uploaded lessons into organized study plans with built-in calendar scheduling.</p>
         </div>
         <div class="rounded-2xl bg-slate-800/70 p-4">
-          <span class="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/10 text-lg text-indigo-300" aria-hidden="true">IN</span>
-          <h3 class="text-lg font-semibold">Instructor sharing</h3>
-          <p class="mt-2 text-sm text-slate-300">Publish quiz sets to classes and track cohort performance at a glance.</p>
+          <img src="{% static 'img/instructor.jpg' %}" alt="ProbeTect logo" class="mb-3 inline-block h-10 w-10 rounded-full object-cover" aria-hidden="true" />
+          <h3 class="text-lg font-semibold">Instructor Suite</h3>
+          <p class="mt-2 text-sm text-slate-300">Share quizzes with classes, monitor performance, and track learning progress effortlessly.</p>
         </div>
       </div>
     </div>
