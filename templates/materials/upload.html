@@ -171,6 +171,11 @@
             button.textContent = "Generating...";
           }
           if (select) {
+            const preservedValue = document.createElement("input");
+            preservedValue.type = "hidden";
+            preservedValue.name = select.name;
+            preservedValue.value = select.value;
+            form.appendChild(preservedValue);
             select.disabled = true;
             select.classList.add("opacity-60", "cursor-not-allowed");
           }

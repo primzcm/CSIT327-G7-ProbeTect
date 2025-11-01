@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import re
@@ -22,7 +22,7 @@ class GeminiError(RuntimeError):
 
 
 QUESTION_BLOCK_RE = re.compile(r'("questions"\s*:\s*\[)(.*?)(\]\s*[},])', re.S)
-DEFAULT_MAX_TOKENS = 2048
+DEFAULT_MAX_TOKENS = 8192  
 
 
 def _pdf_bytes(material) -> bytes:
