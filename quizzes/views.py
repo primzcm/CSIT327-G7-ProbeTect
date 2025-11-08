@@ -123,15 +123,45 @@ class QuizListView(LoginRequiredMixin, View):
     template_name = 'quizzes/list.html'
 
     def get(self, request, material_id: int | None = None):
+        from django.db.models import Q
+        
         quizzes = Quiz.objects.filter(owner=request.user).select_related('material')
         material = None
         if material_id:
             quizzes = quizzes.filter(material_id=material_id)
             material = get_object_or_404(Material, pk=material_id, owner=request.user)
+        
+        # Search functionality
+        search_query = request.GET.get('search', '')
+        if search_query:
+            quizzes = quizzes.filter(
+                Q(title__icontains=search_query) |
+                Q(material__title__icontains=search_query)
+            )
+        
+        # Filter by status
+        status_filter = request.GET.get('status', '')
+        if status_filter:
+            quizzes = quizzes.filter(status=status_filter)
+        
+        # Filter by material
+        material_filter = request.GET.get('material', '')
+        if material_filter:
+            quizzes = quizzes.filter(material_id=material_filter)
+        
         quizzes = quizzes.order_by('-created_at')
+        
+        # Get available materials for filter dropdown
+        available_materials = Material.objects.filter(owner=request.user).order_by('-created_at')
+        
         return render(request, self.template_name, {
             'quizzes': quizzes,
             'material': material,
+            'search_query': search_query,
+            'status_filter': status_filter,
+            'material_filter': material_filter,
+            'available_materials': available_materials,
+            'status_choices': Quiz.Status.choices,
         })
 
 
