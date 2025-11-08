@@ -6,6 +6,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("materials/", include(("materials.urls", "materials"), namespace="materials")),
     path("quizzes/", include(("quizzes.urls", "quizzes"), namespace="quizzes")),
+    path("lessons/", include(("lessons.urls", "lessons"), namespace="lessons")),
     path("", include("blog.urls")),
 ]
 

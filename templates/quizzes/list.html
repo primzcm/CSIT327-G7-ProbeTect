@@ -36,6 +36,38 @@
       </div>
     {% endif %}
 
+    <!-- Search and Filter -->
+    <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form method="get" class="flex flex-col gap-4 md:flex-row md:items-end">
+        <div class="flex-1">
+          <label class="text-sm font-medium text-slate-700" for="search">Search</label>
+          <input type="text" name="search" id="search" value="{{ search_query }}" placeholder="Search quizzes..." class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+        </div>
+        <div class="md:w-48">
+          <label class="text-sm font-medium text-slate-700" for="status">Status</label>
+          <select name="status" id="status" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="md:w-48">
+          <label class="text-sm font-medium text-slate-700" for="material">Material</label>
+          <select name="material" id="material" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">All Materials</option>
+            {% for mat in available_materials %}
+              <option value="{{ mat.id }}" {% if material_filter == mat.id|stringformat:"s" %}selected{% endif %}>{{ mat.title|truncatewords:5 }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">Filter</button>
+          <a href="{% url 'quizzes:list' %}" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Clear</a>
+        </div>
+      </form>
+    </div>
+
     <div class="mt-8 space-y-4">
         {% if material %}
         <form method="post" action="{% url 'quizzes:generate' material.id %}" class="mb-8 p-6 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col gap-4 max-w-md">

@@ -55,6 +55,36 @@ class DashboardView(View):
     def get(self, request):
         if not request.user.is_authenticated:
             return redirect("login")
-        role = request.user.role if isinstance(request.user, User) else User.Role.STUDENT
-        context = {"role": role}
+        
+        from materials.models import Material
+        from quizzes.models import Quiz
+        from lessons.models import Lesson
+        
+        # Get active tab from query parameter
+        active_tab = request.GET.get('tab', 'files')
+        
+        # Get user's materials, quizzes, and lessons
+        materials = Material.objects.filter(owner=request.user).order_by('-created_at')[:10]
+        quizzes = Quiz.objects.filter(owner=request.user).select_related('material').order_by('-created_at')[:10]
+        lessons = Lesson.objects.filter(owner=request.user).select_related('material').order_by('-created_at')[:10]
+        
+        # Counts for tabs
+        materials_count = Material.objects.filter(owner=request.user).count()
+        quizzes_count = Quiz.objects.filter(owner=request.user).count()
+        lessons_count = Lesson.objects.filter(owner=request.user).count()
+        
+        # Get role as string value - request.user.role is already a string from CharField
+        # It should be "instructor" or "student"
+        role = getattr(request.user, 'role', 'student')
+        
+        context = {
+            "role": role,
+            "materials": materials,
+            "quizzes": quizzes,
+            "lessons": lessons,
+            "materials_count": materials_count,
+            "quizzes_count": quizzes_count,
+            "lessons_count": lessons_count,
+            "active_tab": active_tab,
+        }
         return render(request, self.template_name, context)

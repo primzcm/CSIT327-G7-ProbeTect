@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ProbeTect{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-4xl px-6 py-16">
+  <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-sm uppercase tracking-[0.2em] text-indigo-500">Lessons</p>
+      <h1 class="mt-2 text-3xl font-semibold text-slate-900">{{ title }}</h1>
+    </div>
+    <a href="{% url 'lessons:list' %}" class="text-sm font-medium text-indigo-600">← Back to lessons</a>
+  </div>
+
+  {% if messages %}
+    <div class="mt-6 space-y-3">
+      {% for message in messages %}
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="mt-8 space-y-6 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    {% csrf_token %}
+    
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.title.id_for_label }}">Title *</label>
+      {{ form.title }}
+      {% if form.title.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.title.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <label class="text-sm font-medium text-slate-700" for="{{ form.subject.id_for_label }}">Subject</label>
+        {{ form.subject }}
+        {% if form.subject.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.subject.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label class="text-sm font-medium text-slate-700" for="{{ form.scheduled_date.id_for_label }}">Scheduled Date</label>
+        {{ form.scheduled_date }}
+        {% if form.scheduled_date.errors %}
+          <p class="mt-1 text-xs text-rose-600">{{ form.scheduled_date.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.description.id_for_label }}">Description</label>
+      {{ form.description }}
+      {% if form.description.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.description.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.content.id_for_label }}">Content *</label>
+      {{ form.content }}
+      {% if form.content.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.content.errors|join:", " }}</p>
+      {% endif %}
+      <p class="mt-1 text-xs text-slate-500">Lesson content, notes, or plan</p>
+    </div>
+
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.material.id_for_label }}">Associated Material</label>
+      {{ form.material }}
+      {% if form.material.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.material.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex gap-3 pt-4">
+      <button type="submit" class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">Save Lesson</button>
+      <a href="{% url 'lessons:list' %}" class="rounded-lg border border-slate-200 px-6 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
