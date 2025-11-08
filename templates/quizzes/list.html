@@ -80,6 +80,12 @@
             <option value="true_false">True/False</option>
             <option value="fill_in_blank">Fill in the Blanks</option>
           </select>
+          <label class="block text-sm font-medium text-slate-700 mb-2 mt-4">Difficulty level</label>
+          <select name="difficulty" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
           <button type="submit" class="mt-6 rounded-lg bg-indigo-600 px-4 py-2 text-white font-semibold shadow-sm transition hover:bg-indigo-500">Generate Quiz</button>
         </form>
         {% endif %}

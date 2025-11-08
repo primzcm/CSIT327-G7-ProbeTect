@@ -11,7 +11,7 @@ from io import BytesIO
 from django.conf import settings
 
 from materials.supabase import download_file
-from .models import QuizQuestion
+from .models import Quiz, QuizQuestion
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ def chunk_text(text: str, max_chars: int = 12000) -> list[str]:  # Increased max
     return chunks
 
 
-def build_prompt(chunks: list[str], question_count: int, question_type: str | None = None) -> str:
+def build_prompt(chunks: list[str], question_count: int, question_type: str | None = None, difficulty: str | None = None) -> str:
     joined = "\n\n".join(chunks[:5])  # Increased to include more context
     
     prompt_template = ""
@@ -174,7 +174,16 @@ def build_prompt(chunks: list[str], question_count: int, question_type: str | No
             }}
         """)
     
-    prompt = prompt_template.strip() + "\n\nRequirements:\n"
+    # Add difficulty-specific instructions
+    difficulty_instructions = ""
+    if difficulty == Quiz.Difficulty.EASY:
+        difficulty_instructions = "\n\nDIFFICULTY LEVEL: EASY\n- Questions should test basic understanding and recall of key concepts.\n- Use straightforward language and avoid complex terminology.\n- Focus on fundamental facts and definitions.\n- Answer choices should be clearly distinct with obvious correct answers.\n"
+    elif difficulty == Quiz.Difficulty.MEDIUM:
+        difficulty_instructions = "\n\nDIFFICULTY LEVEL: MEDIUM\n- Questions should test comprehension and application of concepts.\n- May require connecting ideas or applying knowledge to scenarios.\n- Some questions may involve moderate analysis or comparison.\n- Answer choices may include plausible distractors.\n"
+    elif difficulty == Quiz.Difficulty.HARD:
+        difficulty_instructions = "\n\nDIFFICULTY LEVEL: HARD\n- Questions should test deep understanding, analysis, and synthesis.\n- Require critical thinking and evaluation of complex concepts.\n- May involve multi-step reasoning or application to novel situations.\n- Answer choices should include sophisticated distractors that test nuanced understanding.\n"
+    
+    prompt = prompt_template.strip() + difficulty_instructions + "\n\nRequirements:\n"
     prompt += "- Output must be valid JSON (RFC 8259) with no markdown, comments, or trailing commas.\n"
     prompt += "- Insert a comma between question objects except after the final one.\n"
     prompt += "- Do not introduce extra sections or keys beyond the schema above.\n"
@@ -333,8 +342,8 @@ def call_gemini(prompt: str, max_output_tokens: int = DEFAULT_MAX_TOKENS) -> dic
             raise GeminiError(f"Gemini returned invalid JSON that could not be repaired. Payload snippet: {snippet}")
 
 
-def generate_quiz(material, *, question_count: int = 5, question_type: str | None = None) -> dict:
-    logger.info(f"generate_quiz called with question_count={question_count}, question_type={question_type}")
+def generate_quiz(material, *, question_count: int = 5, question_type: str | None = None, difficulty: str | None = None) -> dict:
+    logger.info(f"generate_quiz called with question_count={question_count}, question_type={question_type}, difficulty={difficulty}")
     question_count = max(1, min(question_count, 50))  # Allow up to 50 questions
     text = extract_text(material)
     chunks = chunk_text(text)
@@ -351,7 +360,12 @@ def generate_quiz(material, *, question_count: int = 5, question_type: str | Non
         logger.warning(f"Invalid question type {question_type}, defaulting to multiple choice")
         question_type = QuizQuestion.QuestionType.MULTIPLE_CHOICE
     
-    prompt = build_prompt(chunks, question_count, question_type)
+    # Ensure difficulty is valid
+    if difficulty not in (Quiz.Difficulty.EASY, Quiz.Difficulty.MEDIUM, Quiz.Difficulty.HARD):
+        logger.warning(f"Invalid difficulty {difficulty}, defaulting to medium")
+        difficulty = Quiz.Difficulty.MEDIUM
+    
+    prompt = build_prompt(chunks, question_count, question_type, difficulty)
     try:
         quiz = call_gemini(prompt, max_output_tokens=max_tokens)
         # Verify we got the requested number of questions

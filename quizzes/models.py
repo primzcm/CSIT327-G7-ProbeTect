@@ -10,11 +10,17 @@ class Quiz(models.Model):
         PROCESSING = "processing", "Processing"
         READY = "ready", "Ready"
         ERROR = "error", "Error"
+    
+    class Difficulty(models.TextChoices):
+        EASY = "easy", "Easy"
+        MEDIUM = "medium", "Medium"
+        HARD = "hard", "Hard"
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quizzes")
     material = models.ForeignKey('materials.Material', on_delete=models.CASCADE, related_name="quizzes")
     title = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    difficulty = models.CharField(max_length=10, choices=Difficulty.choices, default=Difficulty.MEDIUM)
     model_name = models.CharField(max_length=64, blank=True)
     question_count = models.PositiveIntegerField(default=0)
     settings = models.JSONField(default=dict, blank=True)

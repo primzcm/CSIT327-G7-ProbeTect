@@ -125,6 +125,11 @@
                         <option value="true_false">True/False</option>
                         <option value="fill_in_blank">Fill in the Blank</option>
                       </select>
+                      <select name="difficulty" class="block w-32 rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200" required>
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
                       <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-500" data-generate-button>Generate quiz</button>
                     </div>
                     <div class="hidden space-y-2" data-progress-container>
