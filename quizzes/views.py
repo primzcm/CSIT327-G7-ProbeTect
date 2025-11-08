@@ -25,6 +25,11 @@ class GenerateQuizView(LoginRequiredMixin, View):
             question_count = 10
         question_count = max(1, min(question_count, 50))
         question_type = request.POST.get("question_type", QuizQuestion.QuestionType.MULTIPLE_CHOICE)
+        difficulty = request.POST.get("difficulty", Quiz.Difficulty.MEDIUM)
+        
+        # Validate difficulty
+        if difficulty not in [Quiz.Difficulty.EASY, Quiz.Difficulty.MEDIUM, Quiz.Difficulty.HARD]:
+            difficulty = Quiz.Difficulty.MEDIUM
 
         # Normalize and validate question type values from the form (also accept a few aliases)
         def _normalize_qtype(raw: str | None) -> str:
@@ -48,19 +53,22 @@ class GenerateQuizView(LoginRequiredMixin, View):
             owner=request.user,
             material=material,
             status=Quiz.Status.PROCESSING,
+            difficulty=difficulty,
             settings={
                 "question_count": question_count,
-                "question_type": question_type
+                "question_type": question_type,
+                "difficulty": difficulty
             },
         )
         redirect_url = reverse('materials:upload') + '#queue'
         try:
             # Log the values being passed to generate_quiz
-            logger.info(f"Calling generate_quiz with question_count={question_count}, question_type={question_type}")
+            logger.info(f"Calling generate_quiz with question_count={question_count}, question_type={question_type}, difficulty={difficulty}")
             payload = generate_quiz(
                 material,
                 question_count=question_count,
-                question_type=question_type
+                question_type=question_type,
+                difficulty=difficulty
             )
             reduced_from = payload.pop('reduced_from', None) if isinstance(payload, dict) else None
         except GeminiError as exc:
