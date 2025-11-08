@@ -71,7 +71,7 @@
             </header>
 
             <div class="mt-4 space-y-4">
-              {% if question.choices %}
+              {% if question.question_type == 'multiple_choice' %}
                 <div class="space-y-3">
                   {% for choice in question.choices %}
                     <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:border-indigo-200 hover:bg-white">
@@ -82,9 +82,26 @@
                     </label>
                   {% endfor %}
                 </div>
+              {% elif question.question_type == 'true_false' %}
+                <div class="space-y-3">
+                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:border-indigo-200 hover:bg-white">
+                      <input type="radio" name="q_{{ question.id }}" value="true" class="mt-1 h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        {% if result and result.user_answer == "true" %}checked{% endif %}
+                        {% if quiz.status != 'ready' %}disabled{% endif %}>
+                      <span>True</span>
+                    </label>
+                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:border-indigo-200 hover:bg-white">
+                      <input type="radio" name="q_{{ question.id }}" value="false" class="mt-1 h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        {% if result and result.user_answer == "false" %}checked{% endif %}
+                        {% if quiz.status != 'ready' %}disabled{% endif %}>
+                      <span>False</span>
+                    </label>
+                </div>
               {% else %}
-                <textarea name="q_{{ question.id }}" rows="3" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  {% if quiz.status != 'ready' %}disabled{% endif %}>{% if result %}{{ result.user_answer }}{% endif %}</textarea>
+                <input type="text" name="q_{{ question.id }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  placeholder="Type your answer here..."
+                  value="{% if result %}{{ result.user_answer }}{% endif %}"
+                  {% if quiz.status != 'ready' %}disabled{% endif %}>
               {% endif %}
 
               {% if submitted and result %}

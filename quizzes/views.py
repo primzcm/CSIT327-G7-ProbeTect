@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -12,21 +13,55 @@ from materials.models import Material
 from .models import Quiz, QuizQuestion
 from .services import GeminiError, generate_quiz
 
+logger = logging.getLogger(__name__)
+
 
 class GenerateQuizView(LoginRequiredMixin, View):
     def post(self, request, material_id: int):
         material = get_object_or_404(Material, pk=material_id, owner=request.user)
-        question_count = int(request.POST.get("question_count", 5))
-        question_count = max(1, min(question_count, 10))
+        try:
+            question_count = int(request.POST.get("question_count", 10))
+        except (TypeError, ValueError):
+            question_count = 10
+        question_count = max(1, min(question_count, 50))
+        question_type = request.POST.get("question_type", QuizQuestion.QuestionType.MULTIPLE_CHOICE)
+
+        # Normalize and validate question type values from the form (also accept a few aliases)
+        def _normalize_qtype(raw: str | None) -> str:
+            if not raw:
+                return QuizQuestion.QuestionType.MULTIPLE_CHOICE
+            val = str(raw).strip().lower()
+            if val in (QuizQuestion.QuestionType.MULTIPLE_CHOICE, 'multiple', 'mc', 'multiple_choice'):
+                return QuizQuestion.QuestionType.MULTIPLE_CHOICE
+            if val in (QuizQuestion.QuestionType.TRUE_FALSE, 'true/false', 'truefalse', 'tf', 'boolean'):
+                return QuizQuestion.QuestionType.TRUE_FALSE
+            if val in (QuizQuestion.QuestionType.FILL_IN_BLANK, 'fill-in-blank', 'fill in the blank', 'fib'):
+                return QuizQuestion.QuestionType.FILL_IN_BLANK
+            return QuizQuestion.QuestionType.MULTIPLE_CHOICE
+
+        # Log the raw values received from the form
+        logger.info(f"Form data - question_count: {request.POST.get('question_count')}, question_type: {request.POST.get('question_type')}")
+
+        question_type = _normalize_qtype(question_type)
+            
         quiz = Quiz.objects.create(
             owner=request.user,
             material=material,
             status=Quiz.Status.PROCESSING,
-            settings={"question_count": question_count},
+            settings={
+                "question_count": question_count,
+                "question_type": question_type
+            },
         )
         redirect_url = reverse('materials:upload') + '#queue'
         try:
-            payload = generate_quiz(material, question_count=question_count)
+            # Log the values being passed to generate_quiz
+            logger.info(f"Calling generate_quiz with question_count={question_count}, question_type={question_type}")
+            payload = generate_quiz(
+                material,
+                question_count=question_count,
+                question_type=question_type
+            )
             reduced_from = payload.pop('reduced_from', None) if isinstance(payload, dict) else None
         except GeminiError as exc:
             quiz.status = Quiz.Status.ERROR
@@ -54,12 +89,36 @@ class GenerateQuizView(LoginRequiredMixin, View):
                 quiz.save(update_fields=['title', 'model_name', 'question_count', 'status', 'updated_at'])
                 for index, item in enumerate(questions):
                     choices = item.get("choices", [])
-                    correct_index = item.get("correct_index", 0)
-                    if choices:
-                        position = min(max(correct_index, 0), max(len(choices) - 1, 0))
-                        correct_answer = choices[position]
-                    else:
-                        correct_answer = item.get("answer", "")
+                    correct_answer = ""
+
+                    # Get the question type from the response or fall back to the selected type
+                    item_type_raw = item.get("type") or question_type
+
+                    # Normalize any variants returned by Gemini or other sources
+                    def _normalize_item_type(raw: str | None) -> str:
+                        if not raw:
+                            return question_type
+                        v = str(raw).strip().lower()
+                        if v in (QuizQuestion.QuestionType.MULTIPLE_CHOICE, 'multiple', 'mc', 'multiple_choice'):
+                            return QuizQuestion.QuestionType.MULTIPLE_CHOICE
+                        if v in (QuizQuestion.QuestionType.TRUE_FALSE, 'true/false', 'truefalse', 'tf', 'boolean'):
+                            return QuizQuestion.QuestionType.TRUE_FALSE
+                        if v in (QuizQuestion.QuestionType.FILL_IN_BLANK, 'fill-in-blank', 'fill in the blank', 'fib'):
+                            return QuizQuestion.QuestionType.FILL_IN_BLANK
+                        return question_type
+
+                    question_type_for_item = _normalize_item_type(item_type_raw)
+
+                    if question_type_for_item == QuizQuestion.QuestionType.MULTIPLE_CHOICE:
+                        correct_index = item.get("correct_index", 0)
+                        if choices:
+                            position = min(max(correct_index, 0), max(len(choices) - 1, 0))
+                            correct_answer = choices[position]
+                    elif question_type_for_item == QuizQuestion.QuestionType.TRUE_FALSE:
+                        correct_answer = str(item.get("correct_answer", False)).lower()
+                    else:  # fill_in_blank
+                        correct_answer = item.get("correct_answer", "")
+
                     QuizQuestion.objects.create(
                         quiz=quiz,
                         prompt=item.get("prompt", ""),
@@ -67,6 +126,7 @@ class GenerateQuizView(LoginRequiredMixin, View):
                         correct_answer=correct_answer,
                         explanation=item.get("explanation", ""),
                         order=index,
+                        question_type=question_type_for_item,
                     )
                 messages.success(request, "Quiz generated successfully.")
                 redirect_url = reverse('quizzes:detail', args=[quiz.pk])

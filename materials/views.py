@@ -8,6 +8,7 @@ from django.views import View
 from .forms import MaterialUploadForm
 from .models import Material
 from .supabase import SupabaseStorageError, upload_file
+from quizzes.models import QuizQuestion
 
 
 class MaterialUploadView(LoginRequiredMixin, View):
@@ -17,7 +18,11 @@ class MaterialUploadView(LoginRequiredMixin, View):
     def get(self, request):
         form = self.form_class()
         materials = request.user.materials.all()[:10]
-        return render(request, self.template_name, {"form": form, "materials": materials})
+        return render(request, self.template_name, {
+            "form": form,
+            "materials": materials,
+            "QuizQuestion": QuizQuestion
+        })
 
     def post(self, request):
         form = self.form_class(request.POST, request.FILES)
@@ -46,4 +51,8 @@ class MaterialUploadView(LoginRequiredMixin, View):
                 return redirect("materials:upload")
         if form.errors:
             messages.error(request, "Please correct the errors below.")
-        return render(request, self.template_name, {"form": form, "materials": materials})
+        return render(request, self.template_name, {
+            "form": form,
+            "materials": materials,
+            "QuizQuestion": QuizQuestion
+        })

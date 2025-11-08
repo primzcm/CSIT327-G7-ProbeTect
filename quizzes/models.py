@@ -30,7 +30,13 @@ class Quiz(models.Model):
 
 
 class QuizQuestion(models.Model):
+    class QuestionType(models.TextChoices):
+        MULTIPLE_CHOICE = "multiple_choice", "Multiple Choice"
+        TRUE_FALSE = "true_false", "True/False"
+        FILL_IN_BLANK = "fill_in_blank", "Fill in the Blank"
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+    question_type = models.CharField(max_length=20, choices=QuestionType.choices, default=QuestionType.MULTIPLE_CHOICE)
     prompt = models.TextField()
     choices = models.JSONField(default=list, blank=True)
     correct_answer = models.CharField(max_length=255, blank=True)
