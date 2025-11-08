@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
+from io import BytesIO
+
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
@@ -26,10 +30,21 @@ class GenerateQuizView(LoginRequiredMixin, View):
         question_count = max(1, min(question_count, 50))
         question_type = request.POST.get("question_type", QuizQuestion.QuestionType.MULTIPLE_CHOICE)
         difficulty = request.POST.get("difficulty", Quiz.Difficulty.MEDIUM)
+        timer_minutes = request.POST.get("timer_minutes", "").strip()
         
         # Validate difficulty
         if difficulty not in [Quiz.Difficulty.EASY, Quiz.Difficulty.MEDIUM, Quiz.Difficulty.HARD]:
             difficulty = Quiz.Difficulty.MEDIUM
+        
+        # Parse timer_minutes (optional)
+        timer_value = None
+        if timer_minutes:
+            try:
+                timer_value = int(timer_minutes)
+                if timer_value < 0:
+                    timer_value = None
+            except (ValueError, TypeError):
+                timer_value = None
 
         # Normalize and validate question type values from the form (also accept a few aliases)
         def _normalize_qtype(raw: str | None) -> str:
@@ -54,10 +69,12 @@ class GenerateQuizView(LoginRequiredMixin, View):
             material=material,
             status=Quiz.Status.PROCESSING,
             difficulty=difficulty,
+            timer_minutes=timer_value,
             settings={
                 "question_count": question_count,
                 "question_type": question_type,
-                "difficulty": difficulty
+                "difficulty": difficulty,
+                "timer_minutes": timer_value,
             },
         )
         redirect_url = reverse('materials:upload') + '#queue'
@@ -226,3 +243,124 @@ class QuizDetailView(LoginRequiredMixin, View):
             'total': total,
             'percent': percent,
         })
+
+
+class QuizExportPDFView(LoginRequiredMixin, View):
+    """Export quiz as PDF."""
+    def get(self, request, pk: int):
+        quiz = get_object_or_404(Quiz, pk=pk, owner=request.user)
+        
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+            
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            story = []
+            styles = getSampleStyleSheet()
+            
+            # Title
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=18,
+                textColor='#4F46E5',
+                spaceAfter=12,
+            )
+            story.append(Paragraph(quiz.title or "Quiz", title_style))
+            story.append(Spacer(1, 0.2*inch))
+            
+            # Quiz info
+            info_text = f"Material: {quiz.material.title}<br/>"
+            info_text += f"Difficulty: {quiz.get_difficulty_display()}<br/>"
+            info_text += f"Questions: {quiz.question_count}"
+            story.append(Paragraph(info_text, styles['Normal']))
+            story.append(Spacer(1, 0.3*inch))
+            
+            # Questions (without answers - for student use)
+            for idx, question in enumerate(quiz.questions.all(), 1):
+                story.append(Paragraph(f"<b>Question {idx}:</b> {question.prompt}", styles['Normal']))
+                story.append(Spacer(1, 0.1*inch))
+                
+                if question.question_type == 'multiple_choice' and question.choices:
+                    # Show choices with letters (A, B, C, D, etc.)
+                    choice_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+                    for i, choice in enumerate(question.choices):
+                        if i < len(choice_letters):
+                            story.append(Paragraph(f"  {choice_letters[i]}. {choice}", styles['Normal']))
+                elif question.question_type == 'true_false':
+                    story.append(Paragraph("  A. True", styles['Normal']))
+                    story.append(Paragraph("  B. False", styles['Normal']))
+                else:
+                    # Fill in the blank - show blank line
+                    story.append(Paragraph("  Answer: _______________________", styles['Normal']))
+                
+                story.append(Spacer(1, 0.3*inch))  # Space for student to write answer
+            
+            doc.build(story)
+            buffer.seek(0)
+            
+            response = HttpResponse(buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="quiz_{quiz.pk}.pdf"'
+            return response
+        except ImportError:
+            messages.error(request, "PDF export requires 'reportlab' package. Please install it.")
+            return redirect('quizzes:detail', pk=pk)
+
+
+class QuizExportDOCXView(LoginRequiredMixin, View):
+    """Export quiz as DOCX."""
+    def get(self, request, pk: int):
+        quiz = get_object_or_404(Quiz, pk=pk, owner=request.user)
+        
+        try:
+            from docx import Document
+            from docx.shared import Inches, Pt, RGBColor
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            
+            doc = Document()
+            
+            # Title
+            title = doc.add_heading(quiz.title or "Quiz", 0)
+            title.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            title.runs[0].font.color.rgb = RGBColor(79, 70, 229)
+            
+            # Quiz info
+            doc.add_paragraph(f"Material: {quiz.material.title}")
+            doc.add_paragraph(f"Difficulty: {quiz.get_difficulty_display()}")
+            doc.add_paragraph(f"Questions: {quiz.question_count}")
+            doc.add_paragraph()  # Blank line
+            
+            # Questions (without answers - for student use)
+            for idx, question in enumerate(quiz.questions.all(), 1):
+                doc.add_heading(f"Question {idx}", level=2)
+                doc.add_paragraph(question.prompt)
+                
+                if question.question_type == 'multiple_choice' and question.choices:
+                    # Show choices with letters (A, B, C, D, etc.)
+                    choice_letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+                    for i, choice in enumerate(question.choices):
+                        if i < len(choice_letters):
+                            doc.add_paragraph(f"{choice_letters[i]}. {choice}")
+                elif question.question_type == 'true_false':
+                    doc.add_paragraph("A. True")
+                    doc.add_paragraph("B. False")
+                else:
+                    # Fill in the blank - show blank line
+                    doc.add_paragraph("Answer: _______________________")
+                
+                doc.add_paragraph()  # Blank line for student to write answer
+                doc.add_paragraph()  # Extra spacing
+            
+            buffer = BytesIO()
+            doc.save(buffer)
+            buffer.seek(0)
+            
+            response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            response['Content-Disposition'] = f'attachment; filename="quiz_{quiz.pk}.docx"'
+            return response
+        except ImportError:
+            messages.error(request, "DOCX export requires 'python-docx' package. Please install it.")
+            return redirect('quizzes:detail', pk=pk)

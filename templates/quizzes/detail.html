@@ -22,6 +22,14 @@
         </p>
       </div>
       <div class="flex flex-col gap-3 text-sm font-medium md:items-end">
+        <div class="flex gap-2">
+          <a href="{% url 'quizzes:export_pdf' quiz.pk %}" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600" title="Export as PDF">
+            Export PDF
+          </a>
+          <a href="{% url 'quizzes:export_docx' quiz.pk %}" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600" title="Export as DOCX">
+            Export DOCX
+          </a>
+        </div>
         <a href="{% url 'quizzes:list' %}" class="text-indigo-600 transition hover:text-indigo-500">Back to quizzes</a>
         <a href="{% url 'quizzes:list_by_material' quiz.material_id %}" class="text-slate-500 transition hover:text-slate-700">More from this material</a>
       </div>
@@ -50,7 +58,13 @@
       </div>
     {% endif %}
 
-    <form method="post" class="mt-8 space-y-8">
+    {% if quiz.timer_minutes %}
+    <div id="timer-display" class="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-center">
+      <p class="text-sm font-medium text-amber-800">Time remaining: <span id="timer-text" class="text-lg font-bold">{{ quiz.timer_minutes }}:00</span></p>
+    </div>
+    {% endif %}
+
+    <form method="post" id="quiz-form" class="mt-8 space-y-8">
       {% csrf_token %}
       {% for entry in entries %}
         {% with question=entry.question result=entry.result %}
@@ -131,4 +145,39 @@
     </form>
   </div>
 </section>
+
+{% if quiz.timer_minutes and not submitted %}
+<script>
+  (function() {
+    let timeLeft = {{ quiz.timer_minutes }} * 60; // Convert to seconds
+    const timerDisplay = document.getElementById('timer-text');
+    const quizForm = document.getElementById('quiz-form');
+    
+    function updateTimer() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDisplay.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+      
+      if (timeLeft <= 0) {
+        alert('Time is up! Submitting your quiz...');
+        quizForm.submit();
+        return;
+      }
+      
+      if (timeLeft <= 60) {
+        const timerContainer = timerDisplay.parentElement.parentElement;
+        timerContainer.classList.remove('bg-amber-50', 'border-amber-200');
+        timerContainer.classList.add('bg-rose-50', 'border-rose-200');
+        timerDisplay.parentElement.classList.remove('text-amber-800');
+        timerDisplay.parentElement.classList.add('text-rose-800');
+      }
+      
+      timeLeft--;
+    }
+    
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+  })();
+</script>
+{% endif %}
 {% endblock %}
