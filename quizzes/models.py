@@ -23,6 +23,7 @@ class Quiz(models.Model):
     difficulty = models.CharField(max_length=10, choices=Difficulty.choices, default=Difficulty.MEDIUM)
     model_name = models.CharField(max_length=64, blank=True)
     question_count = models.PositiveIntegerField(default=0)
+    timer_minutes = models.PositiveIntegerField(null=True, blank=True, help_text="Optional timer in minutes for the quiz")
     settings = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

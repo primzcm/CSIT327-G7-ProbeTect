@@ -1,10 +1,12 @@
 ﻿from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 
-from .forms import EmailAuthenticationForm, InstructorSignUpForm, StudentSignUpForm
+from .forms import EmailAuthenticationForm, InstructorSignUpForm, StudentSignUpForm, UserProfileForm
 from .models import User
 
 
@@ -73,6 +75,16 @@ class DashboardView(View):
         quizzes_count = Quiz.objects.filter(owner=request.user).count()
         lessons_count = Lesson.objects.filter(owner=request.user).count()
         
+        # Get upcoming lessons (within next 7 days) for notifications
+        from datetime import date, timedelta
+        today = date.today()
+        next_week = today + timedelta(days=7)
+        upcoming_lessons = Lesson.objects.filter(
+            owner=request.user,
+            scheduled_date__gte=today,
+            scheduled_date__lte=next_week
+        ).order_by('scheduled_date')[:5]
+        
         # Get role as string value - request.user.role is already a string from CharField
         # It should be "instructor" or "student"
         role = getattr(request.user, 'role', 'student')
@@ -86,5 +98,22 @@ class DashboardView(View):
             "quizzes_count": quizzes_count,
             "lessons_count": lessons_count,
             "active_tab": active_tab,
+            "upcoming_lessons": upcoming_lessons,
         }
         return render(request, self.template_name, context)
+
+
+class ProfileView(LoginRequiredMixin, View):
+    """View for viewing and updating user profile."""
+    template_name = "accounts/profile.html"
+
+    def get(self, request):
+        form = UserProfileForm(instance=request.user)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = UserProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect("profile")
+        return render(request, self.template_name, {"form": form})

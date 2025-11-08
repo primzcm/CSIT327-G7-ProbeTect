@@ -9,12 +9,24 @@ INPUT_CLASSES = "block w-full rounded-lg border border-slate-200 bg-white px-3 p
 class BaseSignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "email", "password1", "password2")
+        fields = ("first_name", "last_name", "username", "email", "password1", "password2")
         widgets = {
+            "first_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "First name"}),
+            "last_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Last name"}),
             "username": forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Username"}),
             "email": forms.EmailInput(attrs={"class": INPUT_CLASSES, "placeholder": "Email"}),
         }
 
+    first_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "First name"}),
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Last name"}),
+    )
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Password"}))
     password2 = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Confirm password"}))
 
@@ -56,3 +68,16 @@ class EmailAuthenticationForm(AuthenticationForm):
             except User.DoesNotExist:
                 pass
         return super().clean()
+
+
+class UserProfileForm(forms.ModelForm):
+    """Form for updating user profile information."""
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'username')
+        widgets = {
+            'first_name': forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "First name"}),
+            'last_name': forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Last name"}),
+            'email': forms.EmailInput(attrs={"class": INPUT_CLASSES, "placeholder": "Email"}),
+            'username': forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Username"}),
+        }
