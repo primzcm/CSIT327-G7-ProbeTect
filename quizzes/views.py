@@ -91,23 +91,9 @@ class GenerateQuizView(LoginRequiredMixin, View):
                     choices = item.get("choices", [])
                     correct_answer = ""
 
-                    # Get the question type from the response or fall back to the selected type
-                    item_type_raw = item.get("type") or question_type
-
-                    # Normalize any variants returned by Gemini or other sources
-                    def _normalize_item_type(raw: str | None) -> str:
-                        if not raw:
-                            return question_type
-                        v = str(raw).strip().lower()
-                        if v in (QuizQuestion.QuestionType.MULTIPLE_CHOICE, 'multiple', 'mc', 'multiple_choice'):
-                            return QuizQuestion.QuestionType.MULTIPLE_CHOICE
-                        if v in (QuizQuestion.QuestionType.TRUE_FALSE, 'true/false', 'truefalse', 'tf', 'boolean'):
-                            return QuizQuestion.QuestionType.TRUE_FALSE
-                        if v in (QuizQuestion.QuestionType.FILL_IN_BLANK, 'fill-in-blank', 'fill in the blank', 'fib'):
-                            return QuizQuestion.QuestionType.FILL_IN_BLANK
-                        return question_type
-
-                    question_type_for_item = _normalize_item_type(item_type_raw)
+                    # Always use the user's selected question type, not what Gemini returns
+                    # This ensures the question type matches what the user requested
+                    question_type_for_item = question_type
 
                     if question_type_for_item == QuizQuestion.QuestionType.MULTIPLE_CHOICE:
                         correct_index = item.get("correct_index", 0)
