@@ -74,6 +74,10 @@ body {
   color: var(--text-color);
 }
 
+.dark #how-it-works {
+  background-color: var(--body-bg) !important;
+}
+
 .dark .text-slate-900,
 .dark .text-slate-800,
 .dark .text-slate-700,
@@ -244,6 +248,16 @@ body {
   cursor: pointer;
   flex-shrink: 0;
   transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.step-pill {
+  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.12);
+}
+
+.dark .step-pill {
+  background-color: rgba(129, 140, 248, 0.32) !important;
+  color: #eef2ff !important;
+  box-shadow: inset 0 0 0 1px rgba(165, 180, 252, 0.5);
 }
 
 .option-card input[type="radio"]::after {

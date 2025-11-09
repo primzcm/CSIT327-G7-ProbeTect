@@ -5,6 +5,10 @@ Record of notable changes to code and docs. Add entries with date, scope, and br
 ## 2025-11-10 - Quiz option contrast
 
 - Quizzes: Restyled the option radio inputs so the selected state uses a blue inner dot while ensuring unselected circles remain light for clarity in both themes.
+- Marketing site: Matched the dark-mode background transition for the "From upload to insight" section with the light-mode layout so the color shift happens at the same scroll position.
+- Marketing site: Boosted the contrast of the step-number pills in the same section so the numerals stay as visible in dark mode as they are in light mode.
+- Marketing site: Rewrote the hero “Sample PDF” card to describe the actual ProbeTect pipeline (Supabase storage, pypdf extraction, Gemini quiz generation) instead of placeholder metrics.
+- Marketing site: Restored the classic sample card layout (Outline, Quiz Preview, Insights) but kept the realistic pipeline details so the content matches the product, then tightened the copy/file naming so the card stays readable in both themes and clarified the “extra variants” and storage labels.
 
 ## 2025-11-10 - Dark mode + richer profiles
 
