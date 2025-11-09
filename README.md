@@ -7,11 +7,12 @@ Key capabilities:
 - Quiz generation that enforces a strict JSON schema and repairs malformed responses automatically.
 - Dashboard for managing materials, reviewing generated quizzes, and downloading results.
 - Progress indicators and accessibility touches (skip links, keyboard-friendly navigation).
+- Persistent light/dark mode toggle plus richer account profiles with optional avatars and bios.
  
 ## Tech Stack
 - **Backend:** Python 3.11+, Django 5.2, PostgreSQL (via `DATABASE_URL`), Supabase storage helpers, Google Gemini API.
 - **Frontend:** Tailwind CSS (delivered through CDN), HTMX-lite interactivity with Django templates, vanilla JS enhancements.
-- **Supporting Tools:** `pypdf` for PDF parsing, `python-dotenv` for config loading, GitHub Actions (planned) for CI.
+- **Supporting Tools:** `pypdf` for PDF parsing, `python-dotenv` for config loading, `Pillow` for validating uploaded avatars, GitHub Actions (planned) for CI.
  
 ## Setup & Run
 1. **Clone & environment:**  

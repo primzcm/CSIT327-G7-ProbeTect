@@ -1,5 +1,5 @@
-﻿from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
@@ -107,13 +107,29 @@ class ProfileView(LoginRequiredMixin, View):
     """View for viewing and updating user profile."""
     template_name = "accounts/profile.html"
 
+    def _get_related_counts(self, request):
+        from materials.models import Material
+        from quizzes.models import Quiz
+        from lessons.models import Lesson
+
+        return {
+            "materials_count": Material.objects.filter(owner=request.user).count(),
+            "quizzes_count": Quiz.objects.filter(owner=request.user).count(),
+            "lessons_count": Lesson.objects.filter(owner=request.user).count(),
+        }
+
     def get(self, request):
         form = UserProfileForm(instance=request.user)
-        return render(request, self.template_name, {"form": form})
+        context = {"form": form}
+        context.update(self._get_related_counts(request))
+        return render(request, self.template_name, context)
 
     def post(self, request):
-        form = UserProfileForm(request.POST, instance=request.user)
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
+            messages.success(request, "Profile updated.")
             return redirect("profile")
-        return render(request, self.template_name, {"form": form})
+        context = {"form": form}
+        context.update(self._get_related_counts(request))
+        return render(request, self.template_name, context)

@@ -13,7 +13,7 @@
   <div class="absolute inset-x-0 -top-56 -z-10 h-[32rem] bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.25),_transparent_65%)]"></div>
   <div class="mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 pb-16 pt-20 text-center md:flex-row md:items-start md:text-left">
     <div class="w-full max-w-xl md:w-1/2 md:max-w-none md:pr-6">
-      <p class="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-600">Upload -> Generate -> Practice</p>
+      <p class="badge-pill text-sm">Upload -> Generate -> Practice</p>
       <h1 class="mt-6 text-4xl font-semibold text-slate-900 sm:text-5xl">
         Transform your course PDFs into personalised quizzes in minutes.
       </h1>
@@ -34,38 +34,38 @@
     </div>
     <div class="relative w-full md:w-1/2">
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-indigo-100/30">
-        <div class="flex items-center justify-between text-sm font-medium text-slate-500">
-          <span>Sample PDF: Anatomy_Lecture.pdf</span>
-          <span class="inline-flex items-center gap-1 text-indigo-600"><span class="h-2 w-2 animate-pulse rounded-full bg-indigo-500"></span>Parsing...</span>
+        <div class="flex flex-col gap-1 text-sm font-medium text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span>Sample PDF: Hemodynamics.pdf · 8 pages</span>
+          <span class="inline-flex items-center gap-1 text-indigo-600"><span class="h-2 w-2 animate-pulse rounded-full bg-indigo-500"></span>Gemini 2.5 Flash · Generating quiz</span>
         </div>
         <div class="mt-6 space-y-3">
           <div class="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-left">
             <p class="text-xs uppercase tracking-wide text-indigo-600">Outline</p>
-            <h3 class="mt-1 text-base font-semibold text-slate-900">Cardiorespiratory System Overview</h3>
-            <p class="mt-2 text-sm text-slate-600">ProbeTect extracts headings, keywords, and cross references them against previous quizzes.</p>
+            <h3 class="mt-1 text-base font-semibold text-slate-900">Cardiorespiratory summary detected</h3>
+            <p class="mt-2 text-sm text-slate-600">ProbeTect cleans the PDF, keeps key sections, then hands the digest to Gemini for quiz drafting.</p>
           </div>
           <div class="rounded-2xl border border-slate-200 p-4 text-left">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Quiz Preview</p>
+            <p class="text-xs uppercase tracking-wide text-slate-500">Quiz preview</p>
             <ul class="mt-2 space-y-2 text-sm text-slate-600">
-              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>Explain the relationship between stroke volume and cardiac output.</li>
-              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>Match each respiratory metric with its definition.</li>
-              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>Identify the strongest evidence supporting increased oxygen uptake.</li>
+              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>Multiple choice · “Which adjustment most directly raises stroke volume during interval training?”</li>
+              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>True/False · “Baroreceptors decrease heart rate when arterial pressure rises.”</li>
+              <li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>Short response · “Describe how pulmonary diffusion supports increased VO₂ during sprints.”</li>
             </ul>
           </div>
           <div class="rounded-2xl border border-slate-200 p-4 text-left">
-            <p class="text-xs uppercase tracking-wide text-slate-500">Insights</p>
+            <p class="text-xs uppercase tracking-wide text-slate-500">Pipeline snapshot</p>
             <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div class="rounded-xl bg-slate-100 p-3 text-sm">
-                <p class="text-slate-500">Reading time saved</p>
-                <p class="text-lg font-semibold text-slate-900">42 mins</p>
+                <p class="text-slate-500">Questions queued</p>
+                <p class="text-lg font-semibold text-slate-900">6 multiple choice</p>
               </div>
               <div class="rounded-xl bg-slate-100 p-3 text-sm">
-                <p class="text-slate-500">Suggested focus</p>
-                <p class="text-lg font-semibold text-slate-900">Circulation</p>
+                <p class="text-slate-500">Additional question types</p>
+                <p class="text-lg font-semibold text-slate-900">2 True/False · 1 Short answer</p>
               </div>
               <div class="rounded-xl bg-slate-100 p-3 text-sm">
-                <p class="text-slate-500">Confidence score</p>
-                <p class="text-lg font-semibold text-slate-900">88%</p>
+                <p class="text-slate-500">Storage record</p>
+                <p class="text-lg font-semibold text-indigo-600 break-all">materials/042.pdf</p>
               </div>
             </div>
           </div>
@@ -81,17 +81,17 @@
     <p class="mt-3 text-center text-lg text-slate-600">A workflow designed for busy students and instructors.</p>
     <div class="mt-12 grid gap-6 md:grid-cols-3">
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">1</span>
+        <span class="step-pill inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">1</span>
         <h3 class="mt-5 text-xl font-semibold text-slate-900">Upload your materials</h3>
         <p class="mt-2 text-sm text-slate-600">Drag in lecture notes, lab manuals, or syllabus PDFs. We handle OCR, images, and formatting clean up automatically.</p>
       </div>
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">2</span>
+        <span class="step-pill inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">2</span>
         <h3 class="mt-5 text-xl font-semibold text-slate-900">Generate tailored quizzes</h3>
         <p class="mt-2 text-sm text-slate-600">Choose question types, difficulty, and focus areas. ProbeTect analyses the document and builds quizzes on demand.</p>
       </div>
       <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">3</span>
+        <span class="step-pill inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-base font-semibold text-indigo-600">3</span>
         <h3 class="mt-5 text-xl font-semibold text-slate-900">Review insights and plan lessons</h3>
         <p class="mt-2 text-sm text-slate-600">See strengths, gaps, and suggested follow-up actions - then add them to your study plan or share with classmates.</p>
       </div>
@@ -145,3 +145,5 @@
   </div>
 </section>
 {% endblock %}
+
+
