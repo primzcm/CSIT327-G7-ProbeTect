@@ -13,6 +13,21 @@ class User(AbstractUser):
         default=Role.STUDENT,
         help_text="Distinguishes permissions for students vs instructors."
     )
+    headline = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="Optional short descriptor that surfaces on dashboards."
+    )
+    bio = models.TextField(
+        blank=True,
+        help_text="Longer context that appears on the profile."
+    )
+    profile_photo = models.ImageField(
+        upload_to="avatars/",
+        blank=True,
+        null=True,
+        help_text="Optional profile photo used across the UI."
+    )
 
     def is_student(self) -> bool:
         return self.role == self.Role.STUDENT

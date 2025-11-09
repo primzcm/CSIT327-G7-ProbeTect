@@ -5,56 +5,131 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}ProbeTect{% endblock %}</title>
+    <script>
+      (function () {
+        try {
+          const stored = localStorage.getItem("probe-theme");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (stored === "dark" || (!stored && prefersDark)) {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (err) {
+          console.warn("Theme preference unavailable", err);
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#eef2ff",
+                100: "#e0e7ff",
+                500: "#6366f1",
+                900: "#312e81",
+              },
+            },
+          },
+        },
+      };
+    </script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     {% block head_extra %}{% endblock %}
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-900">
+  <body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
     <a
       href="#main-content"
       class="absolute left-4 top-3 -translate-y-full rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-indigo-300"
     >Skip to main content</a>
-    <header class="border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header class="border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="{% url 'landing' %}" class="flex items-center gap-2 text-lg font-semibold text-slate-900">
+        <a href="{% url 'landing' %}" class="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
           <img src="{% static 'img/logo.png' %}" alt="ProbeTect Logo" class="h-9 w-9 rounded-xl object-cover" />
           ProbeTect
         </a>
-        <nav class="flex items-center gap-4 text-sm font-medium">
-          <a href="{% url 'landing' %}" class="text-slate-600 transition hover:text-slate-900">Home</a>
+        <nav class="flex items-center gap-4 text-sm font-medium text-slate-600 dark:text-slate-200">
+          <a href="{% url 'landing' %}" class="transition hover:text-slate-900 dark:hover:text-white">Home</a>
           {% if user.is_authenticated %}
-            <a href="{% url 'materials:upload' %}" class="text-slate-600 transition hover:text-slate-900">Upload</a>
-            <a href="{% url 'quizzes:list' %}" class="text-slate-600 transition hover:text-slate-900">Quizzes</a>
+            <a href="{% url 'materials:upload' %}" class="transition hover:text-slate-900 dark:hover:text-white">Upload</a>
+            <a href="{% url 'quizzes:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Quizzes</a>
             {% if user.role == 'instructor' %}
-              <a href="{% url 'lessons:list' %}" class="text-slate-600 transition hover:text-slate-900">Lessons</a>
+              <a href="{% url 'lessons:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Lessons</a>
             {% endif %}
             <a href="{% url 'dashboard' %}" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-500">Dashboard</a>
-            <a href="{% url 'profile' %}" class="text-slate-600 transition hover:text-slate-900">Profile</a>
-            <a href="{% url 'logout' %}" class="text-slate-600 transition hover:text-slate-900">Logout</a>
+            <a href="{% url 'profile' %}" class="transition hover:text-slate-900 dark:hover:text-white">Profile</a>
+            <a href="{% url 'logout' %}" class="transition hover:text-slate-900 dark:hover:text-white">Logout</a>
           {% else %}
-            <a href="{% url 'login' %}" class="text-slate-600 transition hover:text-slate-900">Log in</a>
+            <a href="{% url 'login' %}" class="transition hover:text-slate-900 dark:hover:text-white">Log in</a>
             <a href="{% url 'signup_student' %}" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-500">Get started</a>
           {% endif %}
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            aria-pressed="false"
+          >
+            <span class="sr-only">Toggle dark mode</span>
+            <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5 text-slate-600 dark:hidden">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-3.227-1.591 1.591M5.25 12H3m3.227-4.773-1.591-1.591M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+            </svg>
+            <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5 text-slate-100 dark:block" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M17.293 13.293a8 8 0 0 1-10.586-10.586A8 8 0 1 0 17.293 13.293Z" />
+            </svg>
+          </button>
         </nav>
       </div>
     </header>
 
-    <main id="main-content">
+    {% if messages %}
+      <div class="messages-stack mx-auto max-w-3xl px-6 pt-6">
+        {% for message in messages %}
+          <div class="message message-{{ message.tags|default:'info' }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <main id="main-content" class="min-h-[calc(100vh-220px)]">
       {% block content %}{% endblock %}
     </main>
 
-    <footer class="mt-16 border-t border-slate-200 bg-white py-10">
-      <div class="mx-auto flex max-w-6xl flex-col gap-4 px-6 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+    <footer class="mt-16 border-t border-slate-200 bg-white py-10 dark:border-slate-800 dark:bg-slate-900">
+      <div class="mx-auto flex max-w-6xl flex-col gap-4 px-6 text-sm text-slate-500 dark:text-slate-300 md:flex-row md:items-center md:justify-between">
         <p>&copy; {% now "Y" %} ProbeTect. All rights reserved.</p>
         <div class="flex gap-4">
-          <a href="#" class="transition hover:text-slate-700">Privacy</a>
-          <a href="#" class="transition hover:text-slate-700">Terms</a>
-          <a href="#" class="transition hover:text-slate-700">Support</a>
+          <a href="#" class="transition hover:text-slate-700 dark:hover:text-white">Privacy</a>
+          <a href="#" class="transition hover:text-slate-700 dark:hover:text-white">Terms</a>
+          <a href="#" class="transition hover:text-slate-700 dark:hover:text-white">Support</a>
         </div>
       </div>
     </footer>
+
+    <script>
+      (function () {
+        const toggle = document.getElementById("theme-toggle");
+        if (!toggle) return;
+
+        const applyState = () => {
+          const isDark = document.documentElement.classList.contains("dark");
+          toggle.setAttribute("aria-pressed", String(isDark));
+        };
+
+        toggle.addEventListener("click", () => {
+          const isDark = document.documentElement.classList.toggle("dark");
+          localStorage.setItem("probe-theme", isDark ? "dark" : "light");
+          applyState();
+        });
+
+        applyState();
+      })();
+    </script>
   </body>
 </html>

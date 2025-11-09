@@ -2,6 +2,13 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-11-10 - Dark mode + richer profiles
+
+- UI: Added a persistent light/dark toggle in the global chrome, themed the header/footer/cards, and layered CSS overrides so every page respects the selected scheme.
+- Accounts: Expanded the profile page with learning-focus fields, usage stats, optional photo upload w/ validation, and success messaging.
+- Models: Introduced optional `headline`, `bio`, and `profile_photo` fields on the custom `User` plus admin exposure; created the accompanying migration.
+- Dependencies: Added Pillow 11 to requirements for avatar validation and documented the new capability in the README.
+
 ## 2025-10-15 - Landing page updates
 
 - Landing: Took out the pricing buttons and the pricing section on the home page so the focus stays on the free workflow.

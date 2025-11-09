@@ -1,3 +1,312 @@
-﻿body {
+body {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--body-bg, #f8fafc);
+  color: var(--text-color, #0f172a);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+:root {
+  color-scheme: light;
+  --body-bg: #f8fafc;
+  --text-color: #0f172a;
+  --surface-color: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border-color: #e2e8f0;
+  --muted-text: #475569;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --body-bg: #020617;
+  --text-color: #f8fafc;
+  --surface-color: #0f172a;
+  --surface-muted: #0b1220;
+  --border-color: #1e293b;
+  --muted-text: #cbd5f5;
+}
+
+.dark body {
+  background-color: var(--body-bg);
+  color: var(--text-color);
+}
+
+.surface-card {
+  background-color: var(--surface-color);
+  color: inherit;
+}
+
+.surface-muted {
+  background-color: var(--surface-muted);
+}
+
+.theme-toggle {
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-color);
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: #818cf8;
+  color: #6366f1;
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dark .theme-toggle {
+  border-color: #334155;
+}
+
+.dark .bg-white,
+.dark .bg-white\/90,
+.dark .bg-slate-50,
+.dark .bg-slate-100,
+.dark .bg-indigo-50 {
+  background-color: var(--surface-color) !important;
+  color: var(--text-color);
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-slate-300,
+.dark .text-slate-200 {
+  color: var(--text-color) !important;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-600 {
+  color: var(--muted-text) !important;
+}
+
+.dark .text-indigo-900,
+.dark .text-indigo-700,
+.dark .text-indigo-600 {
+  color: #c7d2fe !important;
+}
+
+.dark .border-slate-200,
+.dark .border-indigo-200,
+.dark .border-slate-300 {
+  border-color: var(--border-color) !important;
+}
+
+.dark .bg-gradient-to-b {
+  background-image: linear-gradient(180deg, #0b1220, #020617) !important;
+}
+
+.dark .shadow-xl,
+.dark .shadow-sm {
+  box-shadow: 0 10px 25px rgb(15 23 42 / 0.45) !important;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  background: rgba(99, 102, 241, 0.16);
+  color: #4338ca;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+.dark .badge-pill {
+  background: rgba(129, 140, 248, 0.3);
+  color: #e0e7ff;
+  box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.4);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  letter-spacing: 0.01em;
+}
+
+.chip-success {
+  background: rgba(16, 185, 129, 0.18);
+  color: #047857;
+}
+
+.dark .chip-success {
+  background: rgba(16, 185, 129, 0.3);
+  color: #a7f3d0;
+}
+
+.chip-muted {
+  background: rgba(148, 163, 184, 0.22);
+  color: #475569;
+}
+
+.dark .chip-muted {
+  background: rgba(71, 85, 105, 0.45);
+  color: #cbd5f5;
+}
+
+.avatar-ring {
+  width: 112px;
+  height: 112px;
+  border-radius: 9999px;
+  border: 2px solid rgba(99, 102, 241, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
+}
+
+.avatar-ring img,
+.avatar-fallback {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+
+.dark .avatar-fallback {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+}
+
+.drop-panel {
+  border: 1px dashed var(--border-color);
+  background-color: rgba(99, 102, 241, 0.04);
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.drop-panel:hover {
+  border-color: rgba(99, 102, 241, 0.7);
+}
+
+.dark .drop-panel {
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.option-card {
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-muted);
+  color: var(--muted-text);
+  border-radius: 1.25rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.option-card:hover,
+.option-card:focus-within {
+  border-color: rgba(99, 102, 241, 0.4);
+  background-color: rgba(99, 102, 241, 0.06);
+  box-shadow: 0 15px 35px rgb(15 23 42 / 0.08);
+}
+
+.option-card input[type="radio"] {
+  margin-top: 0.2rem;
+  accent-color: #6366f1;
+}
+
+.option-card.is-checked {
+  border-color: #818cf8;
+  background-color: rgba(99, 102, 241, 0.14);
+  color: var(--text-color);
+  box-shadow: 0 18px 45px rgb(99 102 241 / 0.25);
+}
+
+.dark .option-card:hover,
+.dark .option-card:focus-within {
+  border-color: rgba(129, 140, 248, 0.55);
+  background-color: rgba(129, 140, 248, 0.12);
+}
+
+.dark .option-card.is-checked {
+  border-color: rgba(129, 140, 248, 0.9);
+  background-color: rgba(129, 140, 248, 0.28);
+  box-shadow: 0 18px 45px rgb(15 23 42 / 0.65);
+}
+
+.messages-stack {
+  position: sticky;
+  top: 1rem;
+  z-index: 40;
+}
+
+.message {
+  border-radius: 1rem;
+  border: 1px solid;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.message-success {
+  background-color: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #166534;
+}
+
+.dark .message-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.message-error {
+  background-color: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #7f1d1d;
+}
+
+.dark .message-error {
+  color: #fecaca;
+}
+
+.message-info {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #1d4ed8;
+}
+
+.dark .message-info {
+  color: #bfdbfe;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
 }
