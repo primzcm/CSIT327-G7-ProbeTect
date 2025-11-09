@@ -233,7 +233,60 @@ body {
 
 .option-card input[type="radio"] {
   margin-top: 0.2rem;
-  accent-color: #6366f1;
+  appearance: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(148, 163, 184, 0.75);
+  background-color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.option-card input[type="radio"]::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background-color: #4f46e5;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.option-card input[type="radio"]:checked {
+  border-color: #4f46e5;
+  background-color: rgba(99, 102, 241, 0.15);
+}
+
+.option-card input[type="radio"]:checked::after {
+  transform: scale(1);
+}
+
+.option-card input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+}
+
+.option-card input[type="radio"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.dark .option-card input[type="radio"] {
+  border-color: rgba(226, 232, 240, 0.95);
+  background-color: rgba(248, 250, 252, 0.9);
+}
+
+.dark .option-card input[type="radio"]:checked {
+  border-color: rgba(129, 140, 248, 0.9);
+  background-color: rgba(129, 140, 248, 0.35);
+}
+
+.dark .option-card input[type="radio"]::after {
+  background-color: #4f46e5;
 }
 
 .option-card.is-checked {

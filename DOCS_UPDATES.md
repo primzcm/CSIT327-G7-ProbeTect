@@ -2,6 +2,10 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-11-10 - Quiz option contrast
+
+- Quizzes: Restyled the option radio inputs so the selected state uses a blue inner dot while ensuring unselected circles remain light for clarity in both themes.
+
 ## 2025-11-10 - Dark mode + richer profiles
 
 - UI: Added a persistent light/dark toggle in the global chrome, themed the header/footer/cards, and layered CSS overrides so every page respects the selected scheme.
