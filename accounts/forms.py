@@ -37,6 +37,8 @@ class InstructorSignUpForm(BaseSignUpForm):
 
 
 class EmailAuthenticationForm(AuthenticationForm):
+    """Allow logging in with either username or email."""
+
     username = forms.CharField(
         label="Username or email",
         widget=forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Username or email"}),
@@ -56,3 +58,16 @@ class EmailAuthenticationForm(AuthenticationForm):
             except User.DoesNotExist:
                 pass
         return super().clean()
+
+
+class UserProfileForm(forms.ModelForm):
+    """Simple profile editor for names and email address."""
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "First name"}),
+            "last_name": forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Last name"}),
+            "email": forms.EmailInput(attrs={"class": INPUT_CLASSES, "placeholder": "Email address"}),
+        }

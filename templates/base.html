@@ -28,6 +28,7 @@
           {% if user.is_authenticated %}
             <a href="{% url 'materials:upload' %}" class="text-slate-600 transition hover:text-slate-900">Upload</a>
             <a href="{% url 'quizzes:list' %}" class="text-slate-600 transition hover:text-slate-900">Quizzes</a>
+            <a href="{% url 'profile' %}" class="text-slate-600 transition hover:text-slate-900">Profile</a>
             <a href="{% url 'dashboard' %}" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-500">Dashboard</a>
             <a href="{% url 'logout' %}" class="text-slate-600 transition hover:text-slate-900">Logout</a>
           {% else %}

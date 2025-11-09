@@ -1,10 +1,17 @@
-﻿from django.contrib.auth import login, logout
+from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 
-from .forms import EmailAuthenticationForm, InstructorSignUpForm, StudentSignUpForm
+from .forms import (
+    EmailAuthenticationForm,
+    InstructorSignUpForm,
+    StudentSignUpForm,
+    UserProfileForm,
+)
 from .models import User
 
 
@@ -58,3 +65,25 @@ class DashboardView(View):
         role = request.user.role if isinstance(request.user, User) else User.Role.STUDENT
         context = {"role": role}
         return render(request, self.template_name, context)
+
+
+class ProfileView(LoginRequiredMixin, View):
+    template_name = "accounts/profile.html"
+    form_class = UserProfileForm
+    login_url = "login"
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class(instance=request.user)
+        context = {
+            "form": form,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("profile")
+        messages.error(request, "Please fix the errors below.")
+        return render(request, self.template_name, {"form": form})

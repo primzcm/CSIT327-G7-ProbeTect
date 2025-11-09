@@ -2,6 +2,12 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-11-07 - Account profile page
+
+- Accounts: Added a protected profile view with form-driven updates for first/last name and email plus account summary template.
+- Navigation: Linked the profile page into the global header and surfaced inline status messaging on the profile screen.
+- Tests: Introduced coverage to ensure the profile view enforces authentication and persists edits.
+
 ## 2025-10-15 - Landing page updates
 
 - Landing: Took out the pricing buttons and the pricing section on the home page so the focus stays on the free workflow.
