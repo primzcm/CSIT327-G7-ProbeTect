@@ -60,4 +60,4 @@ Key capabilities:
 | Primo Christian C. Montejo | Junior Developer | primochristian.montejo@cit.edu |
  
 ## Deployment
-No public deployment yet. Once a test or production environment is live we will list the URL and access notes here.
+https://csit327-g7-probetect.onrender.com/
