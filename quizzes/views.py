@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
 from io import BytesIO
 
-from django.contrib import messages
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.crypto import get_random_string
 from django.views import View
 
 from materials.models import Material
 
-from .models import Quiz, QuizQuestion
+from .models import Quiz, QuizAttempt, QuizQuestion, QuizShareLink
 from .services import GeminiError, generate_quiz
+from .utils import grade_quiz_submission
 
 logger = logging.getLogger(__name__)
 
@@ -204,36 +205,26 @@ class QuizDetailView(LoginRequiredMixin, View):
         quiz = self.get_quiz(request, pk)
         questions = list(quiz.questions.all())
         entries = [{'question': question, 'result': None} for question in questions]
+        share_link = None
+        if getattr(request.user, "is_instructor", lambda: False)():
+            share_link = quiz.share_links.filter(is_active=True).order_by("-created_at").first()
+        share_url = reverse("quizzes:shared_take", args=[share_link.token]) if share_link else None
         return render(request, self.template_name, {
             'quiz': quiz,
             'questions': questions,
             'entries': entries,
+            'share_link': share_link,
+            'share_url': request.build_absolute_uri(share_url) if share_url else None,
         })
 
     def post(self, request, pk: int):
         quiz = self.get_quiz(request, pk)
         questions = list(quiz.questions.all())
-        entries = []
-        score = 0
-        for question in questions:
-            field_name = f'q_{question.id}'
-            user_answer = request.POST.get(field_name, '').strip()
-            correct_answer = (question.correct_answer or '').strip()
-            if question.choices:
-                is_correct = user_answer == correct_answer
-            else:
-                is_correct = user_answer.lower() == correct_answer.lower() if user_answer and correct_answer else False
-            if is_correct:
-                score += 1
-            entries.append({
-                'question': question,
-                'result': {
-                    'user_answer': user_answer,
-                    'correct': is_correct,
-                },
-            })
-        total = len(entries) or 1
-        percent = round((score / total) * 100, 1)
+        entries, score, total, percent = grade_quiz_submission(questions, request.POST)
+        share_link = None
+        if getattr(request.user, "is_instructor", lambda: False)():
+            share_link = quiz.share_links.filter(is_active=True).order_by("-created_at").first()
+        share_url = reverse("quizzes:shared_take", args=[share_link.token]) if share_link else None
         return render(request, self.template_name, {
             'quiz': quiz,
             'questions': questions,
@@ -242,6 +233,109 @@ class QuizDetailView(LoginRequiredMixin, View):
             'score': score,
             'total': total,
             'percent': percent,
+            'share_link': share_link,
+            'share_url': request.build_absolute_uri(share_url) if share_url else None,
+        })
+
+
+class QuizShareLinkView(LoginRequiredMixin, View):
+    """Create, regenerate, or disable a direct share link for a quiz."""
+
+    def post(self, request, pk: int):
+        quiz = get_object_or_404(Quiz, pk=pk, owner=request.user)
+        action = request.POST.get("action", "create")
+        active_link = quiz.share_links.filter(is_active=True).order_by("-created_at").first()
+
+        if action == "deactivate":
+            if active_link:
+                active_link.is_active = False
+                active_link.save(update_fields=["is_active"])
+                messages.info(request, "Share link disabled.")
+            else:
+                messages.info(request, "No active share link to disable.")
+        elif action == "regenerate":
+            if active_link:
+                active_link.token = get_random_string(24)
+                active_link.is_active = True
+                active_link.save(update_fields=["token", "is_active"])
+                messages.success(request, "Share link regenerated.")
+            else:
+                QuizShareLink.objects.create(quiz=quiz, created_by=request.user)
+                messages.success(request, "Share link created.")
+        else:
+            if not active_link:
+                QuizShareLink.objects.create(quiz=quiz, created_by=request.user)
+                messages.success(request, "Share link created.")
+            else:
+                messages.info(request, "Share link already active.")
+
+        return redirect("quizzes:detail", pk=quiz.pk)
+
+
+class SharedQuizTakeView(LoginRequiredMixin, View):
+    """Allow students to take a quiz via a direct share link."""
+    template_name = "quizzes/shared_take.html"
+
+    def get(self, request, token: str):
+        share_link = get_object_or_404(
+            QuizShareLink.objects.select_related("quiz", "quiz__material", "created_by"),
+            token=token,
+            is_active=True,
+        )
+        if share_link.quiz.status != Quiz.Status.READY:
+            messages.error(request, "This quiz is not ready yet.")
+            return redirect("quizzes:list")
+        questions = list(share_link.quiz.questions.all())
+        entries = [{'question': question, 'result': None} for question in questions]
+        return render(request, self.template_name, {
+            "share_link": share_link,
+            "quiz": share_link.quiz,
+            "questions": questions,
+            "entries": entries,
+        })
+
+    def post(self, request, token: str):
+        share_link = get_object_or_404(
+            QuizShareLink.objects.select_related("quiz", "quiz__material", "created_by"),
+            token=token,
+            is_active=True,
+        )
+        if share_link.quiz.status != Quiz.Status.READY:
+            messages.error(request, "This quiz is not ready yet.")
+            return redirect("quizzes:list")
+
+        questions = list(share_link.quiz.questions.all())
+        entries, score, total, percent = grade_quiz_submission(questions, request.POST)
+        answers_payload = {
+            str(entry["question"].id): {
+                "user_answer": entry["result"]["user_answer"],
+                "correct": entry["result"]["correct"],
+            }
+            for entry in entries
+        }
+
+        QuizAttempt.objects.update_or_create(
+            share_link=share_link,
+            user=request.user,
+            defaults={
+                "quiz": share_link.quiz,
+                "score": score,
+                "total_questions": total,
+                "percent": percent,
+                "answers": answers_payload,
+            },
+        )
+
+        messages.success(request, "Quiz submitted.")
+        return render(request, self.template_name, {
+            "share_link": share_link,
+            "quiz": share_link.quiz,
+            "questions": questions,
+            "entries": entries,
+            "submitted": True,
+            "score": score,
+            "total": total,
+            "percent": percent,
         })
 
 

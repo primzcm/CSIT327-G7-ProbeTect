@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Quiz - Classes{% endblock %}
+
+{% block content %}
+<section class="bg-white py-12">
+  <div class="mx-auto max-w-4xl px-6">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-indigo-500">Assignments</p>
+        <h1 class="mt-2 text-3xl font-semibold text-slate-900">Assign a quiz</h1>
+        <p class="mt-2 text-sm text-slate-600">Choose a class and a ready quiz to share with students.</p>
+      </div>
+      <a href="{% if classroom %}{% url 'classrooms:detail' classroom.pk %}{% else %}{% url 'classrooms:list' %}{% endif %}" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Cancel</a>
+    </div>
+
+    <form method="post" class="mt-8 space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+      {% csrf_token %}
+      <div class="grid gap-6 md:grid-cols-2">
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.classroom.id_for_label }}">Class</label>
+          {{ form.classroom }}
+          {% if form.classroom.errors %}
+            <p class="text-sm text-rose-600">{{ form.classroom.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.quiz.id_for_label }}">Quiz</label>
+          {{ form.quiz }}
+          {% if form.quiz.errors %}
+            <p class="text-sm text-rose-600">{{ form.quiz.errors.0 }}</p>
+          {% endif %}
+          <p class="mt-2 text-xs text-slate-500">Only ready quizzes you own are listed.</p>
+        </div>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-2">
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.title.id_for_label }}">Title (optional)</label>
+          {{ form.title }}
+          {% if form.title.errors %}
+            <p class="text-sm text-rose-600">{{ form.title.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.due_at.id_for_label }}">Due date (optional)</label>
+          {{ form.due_at }}
+          {% if form.due_at.errors %}
+            <p class="text-sm text-rose-600">{{ form.due_at.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        {{ form.show_answers }}
+        <label class="text-sm font-medium text-slate-700" for="{{ form.show_answers.id_for_label }}">Show correct answers after submission</label>
+      </div>
+
+      <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Assign quiz</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

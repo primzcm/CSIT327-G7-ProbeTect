@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Quiz, QuizQuestion
+from .models import Quiz, QuizAttempt, QuizQuestion, QuizShareLink
 
 
 class QuizQuestionInline(admin.TabularInline):
@@ -22,3 +22,19 @@ class QuizQuestionAdmin(admin.ModelAdmin):
     list_display = ("quiz", "order", "prompt", "correct_answer")
     list_filter = ("quiz",)
     search_fields = ("prompt", "correct_answer")
+
+
+@admin.register(QuizShareLink)
+class QuizShareLinkAdmin(admin.ModelAdmin):
+    list_display = ("quiz", "token", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("token", "quiz__title")
+    readonly_fields = ("token", "created_at")
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ("quiz", "user", "score", "total_questions", "percent", "submitted_at")
+    list_filter = ("quiz",)
+    search_fields = ("quiz__title", "user__username")
+    readonly_fields = ("submitted_at", "updated_at")

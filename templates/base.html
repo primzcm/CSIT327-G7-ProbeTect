@@ -58,6 +58,7 @@
           {% if user.is_authenticated %}
             <a href="{% url 'materials:upload' %}" class="transition hover:text-slate-900 dark:hover:text-white">Upload</a>
             <a href="{% url 'quizzes:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Quizzes</a>
+            <a href="{% url 'classrooms:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Classes</a>
             {% if user.role == 'instructor' %}
               <a href="{% url 'lessons:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Lessons</a>
             {% endif %}

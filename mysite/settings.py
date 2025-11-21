@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'accounts',
     'materials',
     'quizzes',
+    'classrooms',
     'lessons',
     'blog',
 ]
