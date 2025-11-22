@@ -31,21 +31,12 @@
       {% endif %}
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <div>
-        <label class="text-sm font-medium text-slate-700" for="{{ form.subject.id_for_label }}">Subject</label>
-        {{ form.subject }}
-        {% if form.subject.errors %}
-          <p class="mt-1 text-xs text-rose-600">{{ form.subject.errors|join:", " }}</p>
-        {% endif %}
-      </div>
-      <div>
-        <label class="text-sm font-medium text-slate-700" for="{{ form.scheduled_date.id_for_label }}">Scheduled Date</label>
-        {{ form.scheduled_date }}
-        {% if form.scheduled_date.errors %}
-          <p class="mt-1 text-xs text-rose-600">{{ form.scheduled_date.errors|join:", " }}</p>
-        {% endif %}
-      </div>
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.subject.id_for_label }}">Subject</label>
+      {{ form.subject }}
+      {% if form.subject.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.subject.errors|join:", " }}</p>
+      {% endif %}
     </div>
 
     <div>
@@ -73,6 +64,15 @@
       {% endif %}
     </div>
 
+    <div>
+      <label class="text-sm font-medium text-slate-700" for="{{ form.classroom.id_for_label }}">Share with class</label>
+      {{ form.classroom }}
+      {% if form.classroom.errors %}
+        <p class="mt-1 text-xs text-rose-600">{{ form.classroom.errors|join:", " }}</p>
+      {% endif %}
+      <p class="mt-1 text-xs text-slate-500">Optional — select a class to show this lesson to enrolled students.</p>
+    </div>
+
     <div class="flex gap-3 pt-4">
       <button type="submit" class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">Save Lesson</button>
       <a href="{% url 'lessons:list' %}" class="rounded-lg border border-slate-200 px-6 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Cancel</a>
@@ -80,4 +80,3 @@
   </form>
 </section>
 {% endblock %}
-

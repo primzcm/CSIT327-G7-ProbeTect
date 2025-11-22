@@ -16,7 +16,7 @@ class LessonListView(LoginRequiredMixin, View):
     template_name = 'lessons/list.html'
 
     def get(self, request):
-        lessons = Lesson.objects.filter(owner=request.user).select_related('material')
+        lessons = Lesson.objects.filter(owner=request.user).select_related('material', 'classroom')
         # Filter by subject if provided
         subject_filter = request.GET.get('subject', '')
         if subject_filter:
@@ -103,4 +103,3 @@ class LessonDeleteView(LoginRequiredMixin, View):
         lesson.delete()
         messages.success(request, f'Lesson "{title}" deleted successfully.')
         return redirect('lessons:list')
-

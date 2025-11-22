@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.utils.crypto import get_random_string
 
 
 class Quiz(models.Model):
@@ -55,3 +56,81 @@ class QuizQuestion(models.Model):
 
     def __str__(self) -> str:
         return self.prompt[:80]
+
+
+class QuizShareLink(models.Model):
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="share_links",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="quiz_share_links",
+    )
+    token = models.CharField(max_length=32, unique=True, editable=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):  # type: ignore[override]
+        if not self.token:
+            self.token = get_random_string(24)
+        return super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"Share link for {self.quiz}"
+
+
+class QuizAttempt(models.Model):
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="attempts",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="quiz_attempts",
+    )
+    assignment = models.ForeignKey(
+        "classrooms.QuizAssignment",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="attempts",
+    )
+    share_link = models.ForeignKey(
+        QuizShareLink,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="attempts",
+    )
+    score = models.PositiveIntegerField(default=0)
+    total_questions = models.PositiveIntegerField(default=0)
+    percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    answers = models.JSONField(default=dict, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["assignment", "user"],
+                condition=models.Q(assignment__isnull=False),
+                name="unique_assignment_attempt_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["share_link", "user"],
+                condition=models.Q(share_link__isnull=False),
+                name="unique_share_link_attempt_per_user",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} on {self.quiz}"

@@ -2,6 +2,15 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-11-22 - Classrooms & quiz sharing
+
+- Classrooms: Added a new app with class creation for instructors, join-by-code for students, and class detail pages.
+- Assignments: Instructors can assign any ready quiz to a class; students get deadline-enforced, single-attempt quizzes with timers and auto-submit at cutoff.
+- Visibility: Class detail pages now show assignment submission tables for instructors and per-student submitted grades.
+- Direct share: Instructors can generate or disable share links so students can take quizzes without joining a class; class-linked deadlines apply when relevant.
+- Models/Admin: Introduced `Classroom`, `ClassroomMembership`, `QuizAssignment`, `QuizShareLink`, and `QuizAttempt` with admin registration and migrations.
+- Docs/UI: New Classes nav item plus architecture doc updated to describe the classroom/assignment/sharing flow.
+
 ## 2025-11-10 - Quiz option contrast
 
 - Quizzes: Restyled the option radio inputs so the selected state uses a blue inner dot while ensuring unselected circles remain light for clarity in both themes.
@@ -35,6 +44,4 @@ Record of notable changes to code and docs. Add entries with date, scope, and br
 - Docs: Replaced the bare README with a full project overview, setup workflow, and created this changelog.
 - Architecture: Added `docs/ARCHITECTURE.md` outlining the system at a high level.
 - Conventions: Authored `AGENTS.md` covering automation practices, repo agreements, and moved it to the repo root.
-
-
 

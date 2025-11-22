@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Lesson - {{ classroom.name }}{% endblock %}
+
+{% block content %}
+<section class="bg-white py-12">
+  <div class="mx-auto max-w-4xl px-6">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-indigo-500">Lessons</p>
+        <h1 class="mt-2 text-3xl font-semibold text-slate-900">New lesson</h1>
+        <p class="mt-2 text-sm text-slate-600">Share a lesson you already created with {{ classroom.name }} or start a new one.</p>
+      </div>
+      <a href="{% url 'classrooms:detail' classroom.pk %}" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Cancel</a>
+    </div>
+
+    <div class="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+      {% if form.lesson.field.queryset.count %}
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.lesson.id_for_label }}">Lesson</label>
+          {{ form.lesson }}
+          {% if form.lesson.errors %}
+            <p class="text-sm text-rose-600">{{ form.lesson.errors.0 }}</p>
+          {% endif %}
+          <p class="mt-1 text-xs text-slate-500">Only lessons not already shared with a class are listed.</p>
+        </div>
+        <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Assign lesson</button>
+        <div class="pt-2 text-sm text-slate-600">
+          Or <a href="{% url 'lessons:create' %}" class="font-semibold text-indigo-600 hover:text-indigo-500">create a new lesson</a> first.
+        </div>
+      </form>
+      {% else %}
+        <p class="text-sm text-slate-600">You have no unassigned lessons. Create one first, then return here to share it.</p>
+        <a href="{% url 'lessons:create' %}" class="mt-3 inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">Create lesson</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

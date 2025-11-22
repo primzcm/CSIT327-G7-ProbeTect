@@ -75,15 +75,8 @@ class DashboardView(View):
         quizzes_count = Quiz.objects.filter(owner=request.user).count()
         lessons_count = Lesson.objects.filter(owner=request.user).count()
         
-        # Get upcoming lessons (within next 7 days) for notifications
-        from datetime import date, timedelta
-        today = date.today()
-        next_week = today + timedelta(days=7)
-        upcoming_lessons = Lesson.objects.filter(
-            owner=request.user,
-            scheduled_date__gte=today,
-            scheduled_date__lte=next_week
-        ).order_by('scheduled_date')[:5]
+        # Lessons no longer have a scheduled date; show most recent as "upcoming"
+        upcoming_lessons = Lesson.objects.filter(owner=request.user).order_by('-created_at')[:5]
         
         # Get role as string value - request.user.role is already a string from CharField
         # It should be "instructor" or "student"
