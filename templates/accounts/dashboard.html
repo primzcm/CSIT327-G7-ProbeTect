@@ -8,8 +8,8 @@
   <div class="mb-6 rounded-3xl border border-indigo-200 bg-indigo-50 p-6">
     <div class="flex items-start justify-between">
       <div>
-        <h3 class="text-lg font-semibold text-indigo-900">Upcoming Lessons</h3>
-        <p class="mt-1 text-sm text-indigo-700">You have {{ upcoming_lessons|length }} lesson{{ upcoming_lessons|length|pluralize }} scheduled in the next 7 days</p>
+        <h3 class="text-lg font-semibold text-indigo-900">Recent Lessons</h3>
+        <p class="mt-1 text-sm text-indigo-700">Latest {{ upcoming_lessons|length }} lesson{{ upcoming_lessons|length|pluralize }}</p>
       </div>
       {% if role == 'instructor' %}
       <a href="{% url 'lessons:list' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">View all</a>
@@ -22,9 +22,7 @@
           <div>
             <p class="text-sm font-medium text-slate-900">{{ lesson.title }}</p>
             <p class="text-xs text-slate-500">
-              {% if lesson.scheduled_date %}
-                {{ lesson.scheduled_date|date:"M j, Y" }}
-              {% endif %}
+              {{ lesson.created_at|date:"M j, Y" }}
               {% if lesson.subject %} • {{ lesson.subject }}{% endif %}
             </p>
           </div>

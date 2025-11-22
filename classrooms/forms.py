@@ -5,6 +5,7 @@ from django import forms
 from quizzes.models import Quiz
 
 from .models import Classroom, QuizAssignment
+from lessons.models import Lesson
 
 
 class ClassroomForm(forms.ModelForm):
@@ -87,3 +88,23 @@ class QuizAssignmentForm(forms.ModelForm):
             self.fields["classroom"].initial = classroom
         if quiz is not None:
             self.fields["quiz"].initial = quiz
+
+
+class LessonAssignForm(forms.Form):
+    lesson = forms.ModelChoiceField(
+        queryset=Lesson.objects.none(),
+        label="Select an existing lesson",
+        widget=forms.Select(
+            attrs={
+                "class": "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200",
+            }
+        ),
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields["lesson"].queryset = (
+                Lesson.objects.filter(owner=user, classroom__isnull=True).order_by("-created_at")
+            )
+            self.fields["lesson"].empty_label = "Choose a lesson"

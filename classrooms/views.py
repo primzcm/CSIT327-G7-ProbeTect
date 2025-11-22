@@ -11,8 +11,9 @@ from django.views import View
 from quizzes.models import Quiz, QuizAttempt
 from quizzes.utils import grade_quiz_submission
 
-from .forms import ClassroomForm, ClassroomJoinForm, QuizAssignmentForm
+from .forms import ClassroomForm, ClassroomJoinForm, LessonAssignForm, QuizAssignmentForm
 from .models import Classroom, ClassroomMembership, QuizAssignment
+from lessons.models import Lesson
 
 
 class ClassroomListView(LoginRequiredMixin, View):
@@ -146,6 +147,46 @@ class QuizAssignmentCreateView(LoginRequiredMixin, View):
             request,
             self.template_name,
             {"form": form, "classroom": classroom, "quiz": quiz},
+        )
+
+
+class LessonAssignView(LoginRequiredMixin, View):
+    template_name = "classrooms/lesson_assign.html"
+
+    def dispatch(self, request, *args, **kwargs):  # type: ignore[override]
+        if not getattr(request.user, "is_instructor", lambda: False)():
+            messages.error(request, "Only instructors can assign lessons.")
+            return redirect("classrooms:list")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, pk: int):
+        classroom = get_object_or_404(Classroom, pk=pk, owner=request.user)
+        form = LessonAssignForm(user=request.user)
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "classroom": classroom,
+            },
+        )
+
+    def post(self, request, pk: int):
+        classroom = get_object_or_404(Classroom, pk=pk, owner=request.user)
+        form = LessonAssignForm(request.POST, user=request.user)
+        if form.is_valid():
+            lesson: Lesson = form.cleaned_data["lesson"]
+            lesson.classroom = classroom
+            lesson.save(update_fields=["classroom", "updated_at"])
+            messages.success(request, f'Lesson "{lesson.title}" assigned to {classroom.name}.')
+            return redirect("classrooms:detail", pk=classroom.pk)
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "classroom": classroom,
+            },
         )
 
     def post(self, request, pk: int | None = None, quiz_id: int | None = None):

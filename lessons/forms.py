@@ -10,7 +10,7 @@ class LessonForm(forms.ModelForm):
     
     class Meta:
         model = Lesson
-        fields = ['title', 'subject', 'description', 'content', 'scheduled_date', 'material']
+        fields = ['title', 'subject', 'description', 'content', 'material', 'classroom']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200',
@@ -30,13 +30,12 @@ class LessonForm(forms.ModelForm):
                 'rows': 8,
                 'placeholder': 'Lesson content, notes, or plan'
             }),
-            'scheduled_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200'
-            }),
             'material': forms.Select(attrs={
                 'class': 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200'
-            })
+            }),
+            'classroom': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200'
+            }),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -47,4 +46,5 @@ class LessonForm(forms.ModelForm):
             # Only show materials owned by the user
             self.fields['material'].queryset = user.materials.all().order_by('-created_at')
             self.fields['material'].empty_label = "No material (optional)"
-
+            self.fields['classroom'].queryset = user.classrooms.all().order_by('-created_at')
+            self.fields['classroom'].empty_label = "No class (optional)"
