@@ -5,6 +5,7 @@ from typing import Any
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views import View
 
 from quizzes.models import Quiz, QuizAttempt
@@ -97,8 +98,18 @@ class ClassroomDetailView(LoginRequiredMixin, View):
             return redirect("classrooms:list")
 
         memberships = classroom.memberships.select_related("user")
-        assignments = classroom.assignments.select_related("quiz", "quiz__material")
+        assignments = classroom.assignments.select_related("quiz", "quiz__material").prefetch_related(
+            "attempts__user"
+        )
         is_owner = classroom.owner_id == request.user.id
+        attempts_by_assignment: dict[int, list[QuizAttempt]] = {}
+        user_attempts: dict[int, QuizAttempt | None] = {}
+        for assignment in assignments:
+            attempts = list(assignment.attempts.all())
+            attempts_by_assignment[assignment.id] = attempts
+            user_attempts[assignment.id] = next((a for a in attempts if a.user_id == request.user.id), None)
+            assignment.attempts_list = attempts  # attach for template convenience
+            assignment.user_attempt = user_attempts[assignment.id]
         return render(
             request,
             self.template_name,
@@ -107,6 +118,8 @@ class ClassroomDetailView(LoginRequiredMixin, View):
                 "memberships": memberships,
                 "assignments": assignments,
                 "is_owner": is_owner,
+                "attempts_by_assignment": attempts_by_assignment,
+                "user_attempts": user_attempts,
             },
         )
 
@@ -184,7 +197,44 @@ class AssignmentTakeView(LoginRequiredMixin, View):
             return redirect("classrooms:list")
         quiz = assignment.quiz
         questions = list(quiz.questions.all())
+        now = timezone.now()
         entries = [{"question": question, "result": None} for question in questions]
+        deadline_seconds = None
+        if assignment.due_at:
+            remaining = (assignment.due_at - now).total_seconds()
+            deadline_seconds = int(remaining) if remaining > 0 else 0
+
+        time_limit_seconds = None
+        if quiz.timer_minutes:
+            time_limit_seconds = quiz.timer_minutes * 60
+        if deadline_seconds is not None:
+            time_limit_seconds = (
+                min(time_limit_seconds, deadline_seconds) if time_limit_seconds is not None else deadline_seconds
+            )
+
+        existing_attempt = None
+        if assignment.classroom.owner_id != request.user.id:
+            existing_attempt = QuizAttempt.objects.filter(assignment=assignment, user=request.user).first()
+
+        submitted = False
+        score = total = percent = None
+        if existing_attempt:
+            submitted = True
+            score = existing_attempt.score
+            total = existing_attempt.total_questions
+            percent = float(existing_attempt.percent)
+            for entry in entries:
+                qid = str(entry["question"].id)
+                stored = existing_attempt.answers.get(qid, {})
+                entry["result"] = {
+                    "user_answer": stored.get("user_answer", ""),
+                    "correct": stored.get("correct", False),
+                }
+
+        allow_submit = assignment.quiz.status == Quiz.Status.READY and not submitted
+        if assignment.due_at and now >= assignment.due_at and not submitted and assignment.classroom.owner_id != request.user.id:
+            allow_submit = False
+            messages.error(request, "This assignment is past the deadline.")
         return render(
             request,
             self.template_name,
@@ -194,6 +244,13 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "questions": questions,
                 "entries": entries,
                 "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
+                "submitted": submitted,
+                "score": score,
+                "total": total,
+                "percent": percent,
+                "allow_submit": allow_submit,
+                "deadline_seconds": deadline_seconds,
+                "time_limit_seconds": time_limit_seconds,
             },
         )
 
@@ -204,6 +261,54 @@ class AssignmentTakeView(LoginRequiredMixin, View):
 
         quiz = assignment.quiz
         questions = list(quiz.questions.all())
+
+        # Enforce single attempt for students (owners can preview)
+        if assignment.classroom.owner_id != request.user.id:
+            existing_attempt = QuizAttempt.objects.filter(assignment=assignment, user=request.user).first()
+            if existing_attempt:
+                messages.info(request, "You have already submitted this quiz.")
+                entries = []
+                for question in questions:
+                    qid = str(question.id)
+                    stored = existing_attempt.answers.get(qid, {})
+                    entries.append(
+                        {
+                            "question": question,
+                            "result": {
+                                "user_answer": stored.get("user_answer", ""),
+                                "correct": stored.get("correct", False),
+                            },
+                        }
+                    )
+                return render(
+                    request,
+                    self.template_name,
+                    {
+                        "assignment": assignment,
+                        "quiz": quiz,
+                        "questions": questions,
+                        "entries": entries,
+                "submitted": True,
+                "score": existing_attempt.score,
+                "total": existing_attempt.total_questions,
+                "percent": float(existing_attempt.percent),
+                "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
+                "allow_submit": False,
+                "deadline_seconds": None,
+                "time_limit_seconds": None,
+            },
+        )
+
+        now = timezone.now()
+        if (
+            assignment.due_at
+            and now >= assignment.due_at
+            and assignment.classroom.owner_id != request.user.id
+            and not request.POST.get("auto_submit")
+        ):
+            messages.error(request, "This assignment can no longer be submitted; the deadline has passed.")
+            return redirect("classrooms:detail", pk=assignment.classroom_id)
+
         entries, score, total, percent = grade_quiz_submission(questions, request.POST)
 
         answers_payload: dict[str, Any] = {}
@@ -239,6 +344,9 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "total": total,
                 "percent": percent,
                 "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
+                "allow_submit": False,
+                "deadline_seconds": None,
+                "time_limit_seconds": None,
             },
         )
 

@@ -37,14 +37,21 @@
       </div>
     {% endif %}
 
-    {% if quiz.timer_minutes %}
+    {% if time_limit_seconds %}
     <div id="timer-display" class="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-center">
-      <p class="text-sm font-medium text-amber-800">Time remaining: <span id="timer-text" class="text-lg font-bold">{{ quiz.timer_minutes }}:00</span></p>
+      <p class="text-sm font-medium text-amber-800">Time remaining: <span id="timer-text" class="text-lg font-bold"></span></p>
     </div>
+    {% endif %}
+
+    {% if not allow_submit and not submitted %}
+      <div class="mt-6 rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        This shared quiz is closed for you (deadline passed).
+      </div>
     {% endif %}
 
     <form method="post" class="mt-8 space-y-8" id="quiz-form">
       {% csrf_token %}
+      <input type="hidden" name="auto_submit" id="auto-submit-flag" value="">
       {% for entry in entries %}
         {% with question=entry.question result=entry.result %}
           <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -66,7 +73,7 @@
                   {% for choice in question.choices %}
                     <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == choice %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
                       <input type="radio" name="q_{{ question.id }}" value="{{ choice }}" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                        {% if result and result.user_answer == choice %}checked{% endif %} {% if submitted %}disabled{% endif %}>
+                        {% if result and result.user_answer == choice %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
                       <span class="text-sm text-slate-800">{{ choice }}</span>
                     </label>
                   {% endfor %}
@@ -75,18 +82,18 @@
                 <div class="space-y-3">
                   <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == 'true' %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
                     <input type="radio" name="q_{{ question.id }}" value="true" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      {% if result and result.user_answer == "true" %}checked{% endif %} {% if submitted %}disabled{% endif %}>
+                      {% if result and result.user_answer == "true" %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
                     <span class="text-sm text-slate-800">True</span>
                   </label>
                   <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == 'false' %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
                     <input type="radio" name="q_{{ question.id }}" value="false" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      {% if result and result.user_answer == "false" %}checked{% endif %} {% if submitted %}disabled{% endif %}>
+                      {% if result and result.user_answer == "false" %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
                     <span class="text-sm text-slate-800">False</span>
                   </label>
                 </div>
               {% else %}
                 <input type="text" name="q_{{ question.id }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  placeholder="Type your answer here..." value="{% if result %}{{ result.user_answer }}{% endif %}" {% if submitted %}disabled{% endif %}>
+                  placeholder="Type your answer here..." value="{% if result %}{{ result.user_answer }}{% endif %}" {% if submitted or not allow_submit %}disabled{% endif %}>
               {% endif %}
 
               {% if submitted and result %}
@@ -105,20 +112,25 @@
         {% endwith %}
       {% endfor %}
 
-      {% if not submitted %}
+      {% if allow_submit %}
         <div class="flex flex-wrap items-center justify-between gap-4">
           <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Submit answers</button>
+        </div>
+      {% elif submitted %}
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p class="font-semibold text-slate-900">You already submitted this quiz. Your score: {{ score }}/{{ total }} ({{ percent }}%).</p>
         </div>
       {% endif %}
     </form>
   </div>
 </section>
-{% if quiz.timer_minutes and not submitted %}
+{% if time_limit_seconds and allow_submit %}
 <script>
   (function() {
-    let timeLeft = {{ quiz.timer_minutes }} * 60;
+    let timeLeft = {{ time_limit_seconds }};
     const timerDisplay = document.getElementById('timer-text');
     const quizForm = document.getElementById('quiz-form');
+    const autoFlag = document.getElementById('auto-submit-flag');
 
     function updateTimer() {
       const minutes = Math.floor(timeLeft / 60);
@@ -127,6 +139,7 @@
 
       if (timeLeft <= 0) {
         alert('Time is up! Submitting your quiz...');
+        if (autoFlag) autoFlag.value = "1";
         quizForm.submit();
         return;
       }

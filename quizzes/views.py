@@ -9,11 +9,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.views import View
 
 from materials.models import Material
 
+from classrooms.models import QuizAssignment
 from .models import Quiz, QuizAttempt, QuizQuestion, QuizShareLink
 from .services import GeminiError, generate_quiz
 from .utils import grade_quiz_submission
@@ -287,11 +289,62 @@ class SharedQuizTakeView(LoginRequiredMixin, View):
             return redirect("quizzes:list")
         questions = list(share_link.quiz.questions.all())
         entries = [{'question': question, 'result': None} for question in questions]
+
+        # If the quiz is assigned to a class the user is in, enforce the deadline.
+        assignment = (
+            QuizAssignment.objects.filter(
+                quiz=share_link.quiz,
+                classroom__memberships__user=request.user,
+            )
+            .order_by("due_at")
+            .first()
+        )
+        now = timezone.now()
+        deadline_seconds = None
+        if assignment and assignment.due_at:
+            remaining = (assignment.due_at - now).total_seconds()
+            deadline_seconds = int(remaining) if remaining > 0 else 0
+
+        time_limit_seconds = None
+        if share_link.quiz.timer_minutes:
+            time_limit_seconds = share_link.quiz.timer_minutes * 60
+        if deadline_seconds is not None:
+            time_limit_seconds = (
+                min(time_limit_seconds, deadline_seconds) if time_limit_seconds is not None else deadline_seconds
+            )
+
+        existing_attempt = QuizAttempt.objects.filter(share_link=share_link, user=request.user).first()
+        submitted = False
+        score = total = percent = None
+        if existing_attempt:
+            submitted = True
+            score = existing_attempt.score
+            total = existing_attempt.total_questions
+            percent = float(existing_attempt.percent)
+            for entry in entries:
+                qid = str(entry["question"].id)
+                stored = existing_attempt.answers.get(qid, {})
+                entry["result"] = {
+                    "user_answer": stored.get("user_answer", ""),
+                    "correct": stored.get("correct", False),
+                }
+
+        allow_submit = share_link.quiz.status == Quiz.Status.READY and not submitted
+        if assignment and assignment.due_at and now >= assignment.due_at and not submitted:
+            allow_submit = False
+            messages.error(request, "This shared quiz is past the classroom deadline.")
         return render(request, self.template_name, {
             "share_link": share_link,
             "quiz": share_link.quiz,
             "questions": questions,
             "entries": entries,
+            "submitted": submitted,
+            "score": score,
+            "total": total,
+            "percent": percent,
+            "allow_submit": allow_submit,
+            "deadline_seconds": deadline_seconds,
+            "time_limit_seconds": time_limit_seconds,
         })
 
     def post(self, request, token: str):
@@ -303,6 +356,50 @@ class SharedQuizTakeView(LoginRequiredMixin, View):
         if share_link.quiz.status != Quiz.Status.READY:
             messages.error(request, "This quiz is not ready yet.")
             return redirect("quizzes:list")
+
+        assignment = (
+            QuizAssignment.objects.filter(
+                quiz=share_link.quiz,
+                classroom__memberships__user=request.user,
+            )
+            .order_by("due_at")
+            .first()
+        )
+        now = timezone.now()
+        if assignment and assignment.due_at and now >= assignment.due_at and not request.POST.get("auto_submit"):
+            messages.error(request, "This shared quiz can no longer be submitted; the classroom deadline has passed.")
+            return redirect("quizzes:list")
+
+        existing_attempt = QuizAttempt.objects.filter(share_link=share_link, user=request.user).first()
+        if existing_attempt:
+            messages.info(request, "You have already submitted this quiz.")
+            questions = list(share_link.quiz.questions.all())
+            entries = []
+            for question in questions:
+                qid = str(question.id)
+                stored = existing_attempt.answers.get(qid, {})
+                entries.append(
+                    {
+                        "question": question,
+                        "result": {
+                            "user_answer": stored.get("user_answer", ""),
+                            "correct": stored.get("correct", False),
+                        },
+                    }
+                )
+            return render(request, self.template_name, {
+                "share_link": share_link,
+                "quiz": share_link.quiz,
+                "questions": questions,
+                "entries": entries,
+                "submitted": True,
+                "score": existing_attempt.score,
+                "total": existing_attempt.total_questions,
+                "percent": float(existing_attempt.percent),
+                "allow_submit": False,
+                "deadline_seconds": None,
+                "time_limit_seconds": None,
+            })
 
         questions = list(share_link.quiz.questions.all())
         entries, score, total, percent = grade_quiz_submission(questions, request.POST)
@@ -336,6 +433,9 @@ class SharedQuizTakeView(LoginRequiredMixin, View):
             "score": score,
             "total": total,
             "percent": percent,
+            "allow_submit": False,
+            "deadline_seconds": None,
+            "time_limit_seconds": None,
         })
 
 
