@@ -80,6 +80,7 @@
             {% if user.role == 'instructor' %}
               <a href="{% url 'lessons:list' %}" class="transition hover:text-slate-900 dark:hover:text-white">Lessons</a>
             {% endif %}
+            <a href="{% url 'profile_search' %}" class="transition hover:text-slate-900 dark:hover:text-white">Discover</a>
             <a href="{% url 'dashboard' %}" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm transition hover:bg-indigo-500">Dashboard</a>
             <a href="{% url 'profile' %}" class="transition hover:text-slate-900 dark:hover:text-white">Profile</a>
             <a href="{% url 'logout' %}" class="transition hover:text-slate-900 dark:hover:text-white">Logout</a>

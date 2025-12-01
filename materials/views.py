@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from .forms import MaterialUploadForm
 from .models import Material
-from .supabase import SupabaseStorageError, upload_file
+from .supabase import SupabaseStorageError, download_file, upload_file
 from quizzes.models import QuizQuestion
 
 
@@ -23,6 +24,61 @@ class MaterialUploadView(LoginRequiredMixin, View):
             "materials": materials,
             "QuizQuestion": QuizQuestion
         })
+
+
+class MaterialPublicDownloadView(LoginRequiredMixin, View):
+    """
+    Serve a material file to authorised users, honouring visibility flags.
+    - PRIVATE: owner only
+    - PUBLIC: any authenticated user
+    - CLASS: users who share a classroom with the owner (including owners)
+    """
+
+    def get(self, request, pk: int):
+        material = get_object_or_404(Material, pk=pk)
+
+        # Owner can always access their own files
+        if material.owner_id != request.user.id:
+            # Check visibility rules for non-owners
+            if material.visibility == Material.Visibility.PRIVATE:
+                return HttpResponseForbidden("You do not have access to this file.")
+
+            if material.visibility == Material.Visibility.CLASS:
+                from classrooms.models import Classroom, ClassroomMembership
+
+                user_classroom_ids = set(
+                    list(
+                        ClassroomMembership.objects.filter(user=request.user).values_list(
+                            "classroom_id", flat=True
+                        )
+                    )
+                    + list(Classroom.objects.filter(owner=request.user).values_list("id", flat=True))
+                )
+                owner_classroom_ids = set(
+                    list(
+                        ClassroomMembership.objects.filter(user=material.owner).values_list(
+                            "classroom_id", flat=True
+                        )
+                    )
+                    + list(Classroom.objects.filter(owner=material.owner).values_list("id", flat=True))
+                )
+
+                if not (user_classroom_ids & owner_classroom_ids):
+                    return HttpResponseForbidden("You do not have access to this file.")
+
+        try:
+            file_bytes = download_file(material.storage_path)
+        except SupabaseStorageError as exc:
+            messages.error(request, f"Could not download file: {exc}")
+            return redirect("materials:upload")
+
+        response = HttpResponse(
+            file_bytes,
+            content_type=material.content_type or "application/octet-stream",
+        )
+        # Let the browser decide whether to display inline or download
+        response["Content-Disposition"] = f'inline; filename="{material.original_filename or material.title or "material"}"'
+        return response
 
     def post(self, request):
         form = self.form_class(request.POST, request.FILES)
