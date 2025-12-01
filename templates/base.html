@@ -93,6 +93,7 @@
         {% for message in messages %}
           <div class="message message-{{ message.tags|default:'info' }}">
             <span>{{ message }}</span>
+            <button type="button" class="message-close" aria-label="Dismiss notification">&times;</button>
           </div>
         {% endfor %}
       </div>
@@ -130,6 +131,51 @@
         });
 
         applyState();
+      })();
+    </script>
+
+    <script>
+      // Simple show/hide password toggles for login & signup forms
+      (function () {
+        const toggles = document.querySelectorAll(".js-password-toggle");
+        if (!toggles.length) return;
+
+        toggles.forEach((btn) => {
+          const targetId = btn.getAttribute("data-target");
+          if (!targetId) return;
+          const input = document.getElementById(targetId);
+          if (!input) return;
+
+          btn.addEventListener("click", () => {
+            const isHidden = input.type === "password";
+            input.type = isHidden ? "text" : "password";
+            const label = btn.querySelector(".js-password-toggle-text");
+            if (label) {
+              label.textContent = isHidden ? "Hide" : "Show";
+            }
+          });
+        });
+      })();
+
+      // Auto-dismiss flash messages with optional manual close
+      (function () {
+        const stack = document.querySelector(".messages-stack");
+        if (!stack) return;
+
+        const messages = Array.from(stack.querySelectorAll(".message"));
+        messages.forEach((msg, index) => {
+          const closeBtn = msg.querySelector(".message-close");
+          const hide = () => {
+            msg.classList.add("opacity-0", "translate-y-1");
+            setTimeout(() => msg.remove(), 200);
+          };
+          if (closeBtn) {
+            closeBtn.addEventListener("click", hide);
+          }
+          // Stagger auto-dismiss so multiple messages fade one after another
+          const delay = 4000 + index * 800;
+          setTimeout(hide, delay);
+        });
       })();
     </script>
   </body>
