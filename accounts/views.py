@@ -2,7 +2,8 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
-from django.shortcuts import redirect, render
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
 
@@ -125,4 +126,102 @@ class ProfileView(LoginRequiredMixin, View):
             return redirect("profile")
         context = {"form": form}
         context.update(self._get_related_counts(request))
+        return render(request, self.template_name, context)
+
+
+class PublicProfileView(LoginRequiredMixin, View):
+    """View for viewing another user's public profile and their visible materials."""
+    template_name = "accounts/public_profile.html"
+
+    def get(self, request, username: str):
+        profile_user = get_object_or_404(User, username=username)
+        is_own_profile = profile_user.id == request.user.id
+
+        from materials.models import Material
+        from classrooms.models import ClassroomMembership
+
+        # Determine which materials to show based on visibility
+        if is_own_profile:
+            # Show all materials for own profile
+            materials = Material.objects.filter(owner=profile_user).order_by("-created_at")
+            share_class = False
+        else:
+            # Check if users share a class (either both are members, or one owns and the other is a member)
+            from classrooms.models import Classroom
+
+            # Get classrooms where request.user is a member or owner
+            user_classroom_ids = set(
+                list(
+                    ClassroomMembership.objects.filter(user=request.user).values_list("classroom_id", flat=True)
+                )
+                + list(Classroom.objects.filter(owner=request.user).values_list("id", flat=True))
+            )
+
+            # Get classrooms where profile_user is a member or owner
+            profile_classroom_ids = set(
+                list(
+                    ClassroomMembership.objects.filter(user=profile_user).values_list("classroom_id", flat=True)
+                )
+                + list(Classroom.objects.filter(owner=profile_user).values_list("id", flat=True))
+            )
+
+            share_class = bool(user_classroom_ids & profile_classroom_ids)
+
+            # Show PUBLIC materials always, and CLASS materials if they share a class
+            if share_class:
+                materials = Material.objects.filter(
+                    owner=profile_user,
+                    visibility__in=[Material.Visibility.PUBLIC, Material.Visibility.CLASS],
+                ).order_by("-created_at")
+            else:
+                materials = Material.objects.filter(
+                    owner=profile_user,
+                    visibility=Material.Visibility.PUBLIC,
+                ).order_by("-created_at")
+
+        # Get public stats (only count public materials for others)
+        if is_own_profile:
+            materials_count = Material.objects.filter(owner=profile_user).count()
+        else:
+            materials_count = materials.count()
+
+        context = {
+            "profile_user": profile_user,
+            "is_own_profile": is_own_profile,
+            "materials": materials[:20],  # Limit to 20 most recent
+            "materials_count": materials_count,
+            "share_class": share_class if not is_own_profile else False,
+        }
+        return render(request, self.template_name, context)
+
+
+class ProfileSearchView(LoginRequiredMixin, View):
+    """Search and discover public profiles."""
+    template_name = "accounts/profile_search.html"
+
+    def get(self, request):
+        from materials.models import Material
+
+        search_query = request.GET.get("q", "").strip()
+        users = User.objects.none()
+
+        if search_query:
+            # Search by username, first name, last name, or headline
+            users = User.objects.filter(
+                Q(username__icontains=search_query)
+                | Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
+                | Q(headline__icontains=search_query)
+            ).exclude(id=request.user.id).order_by("-date_joined")[:50]
+
+            # Annotate with public materials count
+            for user in users:
+                user.public_materials_count = Material.objects.filter(
+                    owner=user, visibility=Material.Visibility.PUBLIC
+                ).count()
+
+        context = {
+            "search_query": search_query,
+            "users": users,
+        }
         return render(request, self.template_name, context)
