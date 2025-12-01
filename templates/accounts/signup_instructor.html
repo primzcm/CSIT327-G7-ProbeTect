@@ -19,13 +19,32 @@
       <h2 class="text-xl font-semibold text-slate-900">Create instructor account</h2>
       {% csrf_token %}
       {% for field in form %}
-        <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.errors %}
-            <p class="text-xs text-rose-600">{{ field.errors|join:", " }}</p>
-          {% endif %}
-        </div>
+        {% if field.name == "password1" or field.name == "password2" %}
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <div class="relative">
+              {{ field }}
+              <button
+                type="button"
+                class="absolute inset-y-0 right-3 flex items-center text-xs font-medium text-slate-500 hover:text-slate-700 js-password-toggle"
+                data-target="{{ field.id_for_label }}"
+              >
+                <span class="js-password-toggle-text">Show</span>
+              </button>
+            </div>
+            {% if field.errors %}
+              <p class="text-xs text-rose-600">{{ field.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-slate-700" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="text-xs text-rose-600">{{ field.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        {% endif %}
       {% endfor %}
       <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">Create instructor account</button>
       <p class="text-xs text-slate-500">Need student access instead? <a class="text-indigo-600" href="{% url 'signup_student' %}">Switch to student signup</a>.</p>

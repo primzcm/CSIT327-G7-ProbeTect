@@ -5,15 +5,20 @@
 {% block content %}
 <section class="mx-auto max-w-6xl px-6 py-16">
   {% if upcoming_lessons %}
-  <div class="mb-6 rounded-3xl border border-indigo-200 bg-indigo-50 p-6">
-    <div class="flex items-start justify-between">
+  <div class="mb-6 rounded-3xl border border-indigo-200 bg-indigo-50 p-6" id="recent-lessons-banner">
+    <div class="flex items-start justify-between gap-3">
       <div>
         <h3 class="text-lg font-semibold text-indigo-900">Recent Lessons</h3>
         <p class="mt-1 text-sm text-indigo-700">Latest {{ upcoming_lessons|length }} lesson{{ upcoming_lessons|length|pluralize }}</p>
       </div>
-      {% if role == 'instructor' %}
-      <a href="{% url 'lessons:list' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">View all</a>
-      {% endif %}
+      <div class="flex items-center gap-3">
+        {% if role == 'instructor' %}
+        <a href="{% url 'lessons:list' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">View all</a>
+        {% endif %}
+        <button type="button" class="text-xs font-medium text-indigo-500 hover:text-indigo-700" id="recent-lessons-dismiss">
+          Clear
+        </button>
+      </div>
     </div>
     <div class="mt-4 space-y-2">
       {% for lesson in upcoming_lessons %}
@@ -221,4 +226,35 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block head_extra %}
+  {{ block.super }}
+  <script>
+    // Persist dismissing of the "Recent Lessons" banner per browser
+    (function () {
+      document.addEventListener("DOMContentLoaded", function () {
+        const banner = document.getElementById("recent-lessons-banner");
+        const dismiss = document.getElementById("recent-lessons-dismiss");
+        if (!banner || !dismiss) return;
+
+        try {
+          const key = "dashboard_recent_lessons_dismissed";
+          if (localStorage.getItem(key) === "1") {
+            banner.style.display = "none";
+            return;
+          }
+          dismiss.addEventListener("click", function () {
+            banner.style.display = "none";
+            localStorage.setItem(key, "1");
+          });
+        } catch (err) {
+          // If storage is unavailable, just hide for this session
+          dismiss.addEventListener("click", function () {
+            banner.style.display = "none";
+          });
+        }
+      });
+    })();
+  </script>
 {% endblock %}

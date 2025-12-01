@@ -89,6 +89,29 @@ class QuizAssignmentForm(forms.ModelForm):
         if quiz is not None:
             self.fields["quiz"].initial = quiz
 
+        # Prevent picking a due date in the past on the client side where supported
+        from django.utils import timezone
+
+        now = timezone.localtime()
+        min_value = now.strftime("%Y-%m-%dT%H:%M")
+        if "due_at" in self.fields:
+            widget = self.fields["due_at"].widget
+            attrs = widget.attrs or {}
+            attrs["min"] = min_value
+            widget.attrs = attrs
+
+    def clean_due_at(self):
+        from django.utils import timezone
+
+        due_at = self.cleaned_data.get("due_at")
+        if due_at is None:
+            return due_at
+        # Normalize both to aware datetimes in the same zone
+        now = timezone.now()
+        if due_at < now:
+            raise forms.ValidationError("Due date must be in the future.")
+        return due_at
+
 
 class LessonAssignForm(forms.Form):
     lesson = forms.ModelChoiceField(

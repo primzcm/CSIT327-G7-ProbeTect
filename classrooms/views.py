@@ -149,6 +149,45 @@ class QuizAssignmentCreateView(LoginRequiredMixin, View):
             {"form": form, "classroom": classroom, "quiz": quiz},
         )
 
+    def post(self, request, pk: int | None = None, quiz_id: int | None = None):
+        classroom = self._resolve_classroom(request, pk) if pk else None
+        quiz = self._resolve_quiz(request, quiz_id) if quiz_id else None
+        form = QuizAssignmentForm(request.POST, user=request.user)
+
+        if form.is_valid():
+            assignment: QuizAssignment = form.save(commit=False)
+            if assignment.classroom.owner_id != request.user.id:
+                messages.error(request, "You can only assign quizzes to your own classes.")
+                return redirect("classrooms:list")
+            if assignment.quiz.owner_id != request.user.id:
+                messages.error(request, "You can only assign quizzes you own.")
+                return redirect("classrooms:list")
+            if assignment.quiz.status != Quiz.Status.READY:
+                messages.error(request, "Only ready quizzes can be assigned.")
+                return redirect("classrooms:list")
+            assignment.created_by = request.user
+            if not assignment.title:
+                assignment.title = assignment.quiz.title or "Quiz assignment"
+            assignment.save()
+            messages.success(request, "Quiz assigned to class.")
+            return redirect("classrooms:detail", pk=assignment.classroom_id)
+
+        return render(
+            request,
+            self.template_name,
+            {"form": form, "classroom": classroom, "quiz": quiz},
+        )
+
+    def _resolve_classroom(self, request, classroom_id: int | None) -> Classroom | None:
+        if classroom_id is None:
+            return None
+        return get_object_or_404(Classroom, pk=classroom_id, owner=request.user)
+
+    def _resolve_quiz(self, request, quiz_id: int | None) -> Quiz | None:
+        if quiz_id is None:
+            return None
+        return get_object_or_404(Quiz, pk=quiz_id, owner=request.user)
+
 
 class LessonAssignView(LoginRequiredMixin, View):
     template_name = "classrooms/lesson_assign.html"
@@ -188,45 +227,6 @@ class LessonAssignView(LoginRequiredMixin, View):
                 "classroom": classroom,
             },
         )
-
-    def post(self, request, pk: int | None = None, quiz_id: int | None = None):
-        classroom = self._resolve_classroom(request, pk) if pk else None
-        quiz = self._resolve_quiz(request, quiz_id) if quiz_id else None
-        form = QuizAssignmentForm(request.POST, user=request.user)
-
-        if form.is_valid():
-            assignment: QuizAssignment = form.save(commit=False)
-            if assignment.classroom.owner_id != request.user.id:
-                messages.error(request, "You can only assign quizzes to your own classes.")
-                return redirect("classrooms:list")
-            if assignment.quiz.owner_id != request.user.id:
-                messages.error(request, "You can only assign quizzes you own.")
-                return redirect("classrooms:list")
-            if assignment.quiz.status != Quiz.Status.READY:
-                messages.error(request, "Only ready quizzes can be assigned.")
-                return redirect("classrooms:list")
-            assignment.created_by = request.user
-            if not assignment.title:
-                assignment.title = assignment.quiz.title or "Quiz assignment"
-            assignment.save()
-            messages.success(request, "Quiz assigned to class.")
-            return redirect("classrooms:detail", pk=assignment.classroom_id)
-
-        return render(
-            request,
-            self.template_name,
-            {"form": form, "classroom": classroom, "quiz": quiz},
-        )
-
-    def _resolve_classroom(self, request, classroom_id: int | None) -> Classroom | None:
-        if classroom_id is None:
-            return None
-        return get_object_or_404(Classroom, pk=classroom_id, owner=request.user)
-
-    def _resolve_quiz(self, request, quiz_id: int | None) -> Quiz | None:
-        if quiz_id is None:
-            return None
-        return get_object_or_404(Quiz, pk=quiz_id, owner=request.user)
 
 
 class AssignmentTakeView(LoginRequiredMixin, View):
