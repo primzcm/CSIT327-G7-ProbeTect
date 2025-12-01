@@ -40,6 +40,24 @@
       };
     </script>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+      /* Toast-style flash messages fixed under the header */
+      .messages-stack {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 4.25rem;
+        z-index: 40;
+        pointer-events: none;
+      }
+      .messages-stack .message {
+        pointer-events: auto;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .messages-stack .message-close {
+        margin-left: 0.75rem;
+      }
+    </style>
     {% block head_extra %}{% endblock %}
   </head>
   <body class="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
