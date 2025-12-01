@@ -31,8 +31,14 @@ class BaseSignUpForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(attrs={"class": INPUT_CLASSES, "placeholder": "Last name"}),
     )
-    password1 = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Password"}))
-    password2 = forms.CharField(widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Confirm password"}))
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Password"}),
+    )
+    password2 = forms.CharField(
+        label="Confirm password",
+        widget=forms.PasswordInput(attrs={"class": INPUT_CLASSES, "placeholder": "Confirm password"}),
+    )
 
     role: str = User.Role.STUDENT
 
