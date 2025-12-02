@@ -253,20 +253,49 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 min(time_limit_seconds, deadline_seconds) if time_limit_seconds is not None else deadline_seconds
             )
 
+        is_owner = assignment.classroom.owner_id == request.user.id
+
         existing_attempt = None
-        if assignment.classroom.owner_id != request.user.id:
+        if not is_owner:
             existing_attempt = QuizAttempt.objects.filter(assignment=assignment, user=request.user).first()
 
-        submitted = False
         score = total = percent = None
         attempts_used = 0
         max_attempts = assignment.max_attempts or 1
+        submitted = False
+        attempt_history: list[dict] = []
+        scores_hidden = False
+
         if existing_attempt:
-            submitted = True
+            attempts_used = existing_attempt.attempts_used
             score = existing_attempt.score
             total = existing_attempt.total_questions
             percent = float(existing_attempt.percent)
-            attempts_used = existing_attempt.attempts_used
+            attempt_history = list(existing_attempt.attempt_history or [])
+
+        allow_submit = assignment.quiz.status == Quiz.Status.READY
+        if not is_owner:
+            # Students: block answering when due date passed or attempts exhausted.
+            if assignment.due_at and now >= assignment.due_at:
+                allow_submit = False
+                submitted = attempts_used > 0
+            elif attempts_used >= max_attempts:
+                allow_submit = False
+                submitted = True
+
+            # If scores are delayed until after the due date, hide score details on the take/review page
+            # until the quiz has closed. The assignment card will still show "Score will be visible..."
+            if (
+                assignment.delay_score_until_due
+                and assignment.due_at
+                and assignment.due_at > now
+            ):
+                scores_hidden = True
+                score = total = percent = None
+                attempt_history = []
+
+        # Only show previous answers when the quiz is effectively locked.
+        if existing_attempt and (not allow_submit or assignment.classroom.owner_id == request.user.id):
             for entry in entries:
                 qid = str(entry["question"].id)
                 stored = existing_attempt.answers.get(qid, {})
@@ -274,13 +303,6 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                     "user_answer": stored.get("user_answer", ""),
                     "correct": stored.get("correct", False),
                 }
-
-        allow_submit = assignment.quiz.status == Quiz.Status.READY
-        if assignment.classroom.owner_id != request.user.id:
-            if assignment.due_at and now >= assignment.due_at:
-                allow_submit = False
-            elif attempts_used >= max_attempts:
-                allow_submit = False
         return render(
             request,
             self.template_name,
@@ -289,13 +311,17 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "quiz": quiz,
                 "questions": questions,
                 "entries": entries,
-                "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
+                "is_owner": is_owner,
+                "show_answers": assignment.show_answers or is_owner,
+                "can_review": assignment.allow_review or is_owner,
                 "submitted": submitted,
                 "score": score,
                 "total": total,
                 "percent": percent,
+                "attempt_history": attempt_history,
                 "attempts_used": attempts_used,
                 "max_attempts": max_attempts,
+                "scores_hidden": scores_hidden,
                 "allow_submit": allow_submit,
                 "deadline_seconds": deadline_seconds,
                 "time_limit_seconds": time_limit_seconds,
@@ -310,10 +336,12 @@ class AssignmentTakeView(LoginRequiredMixin, View):
         quiz = assignment.quiz
         questions = list(quiz.questions.all())
 
+        is_owner = assignment.classroom.owner_id == request.user.id
+
         existing_attempt = None
         max_attempts = assignment.max_attempts or 1
         attempts_used = 0
-        if assignment.classroom.owner_id != request.user.id:
+        if not is_owner:
             existing_attempt = QuizAttempt.objects.filter(assignment=assignment, user=request.user).first()
             if existing_attempt:
                 attempts_used = existing_attempt.attempts_used
@@ -346,8 +374,8 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                             "score": existing_attempt.score,
                             "total": existing_attempt.total_questions,
                             "percent": float(existing_attempt.percent),
-                            "show_answers": assignment.show_answers
-                            or assignment.classroom.owner_id == request.user.id,
+                            "show_answers": assignment.show_answers or is_owner,
+                            "can_review": assignment.allow_review or is_owner,
                             "allow_submit": False,
                             "deadline_seconds": None,
                             "time_limit_seconds": None,
@@ -375,14 +403,9 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "correct": entry["result"]["correct"],
             }
 
-        # Update or create the user's attempt record, tracking how many times they've submitted.
-        if existing_attempt:
-            attempts_used = existing_attempt.attempts_used
-        attempts_used_for_save = attempts_used
-        if assignment.classroom.owner_id != request.user.id:
-            attempts_used_for_save = attempts_used + 1
-
-        QuizAttempt.objects.update_or_create(
+        # Update or create the user's attempt record, tracking how many times they've submitted
+        # and preserving a simple history of attempt scores.
+        attempt_obj, _ = QuizAttempt.objects.update_or_create(
             assignment=assignment,
             user=request.user,
             defaults={
@@ -391,11 +414,47 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "total_questions": total,
                 "percent": percent,
                 "answers": answers_payload,
-                "attempts_used": attempts_used_for_save,
             },
         )
 
+        # Refresh from DB to access existing history / attempts_used
+        attempt_obj.refresh_from_db()
+        attempts_used = attempt_obj.attempts_used
+        if not is_owner:
+            attempts_used = attempts_used + 1
+
+        history = list(attempt_obj.attempt_history or [])
+        history.append(
+            {
+                "attempt": attempts_used,
+                "score": score,
+                "total": total,
+                "percent": float(percent),
+            }
+        )
+        attempt_obj.attempts_used = attempts_used
+        attempt_obj.attempt_history = history
+        attempt_obj.save(update_fields=["attempts_used", "attempt_history", "score", "total_questions", "percent", "answers"])
+
+        attempts_used_for_save = attempts_used
+
+        # For students, if they still have attempts remaining and the quiz is open,
+        # redirect back to the take view so they can start the next attempt immediately.
+        if not is_owner and attempts_used_for_save < max_attempts:
+            remaining = max_attempts - attempts_used_for_save
+            messages.success(
+                request,
+                f"Attempt {attempts_used_for_save} submitted. You have {remaining} more attempt"
+                f"{'s' if remaining != 1 else ''} remaining.",
+            )
+            return redirect("classrooms:detail", pk=assignment.classroom_id)
+
         messages.success(request, "Quiz submitted.")
+        if not is_owner:
+            # After a final attempt, take students back to the classroom page to see their score (or pending message).
+            return redirect("classrooms:detail", pk=assignment.classroom_id)
+
+        # Instructors stay on the preview screen and can always see answers.
         return render(
             request,
             self.template_name,
@@ -404,16 +463,19 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "quiz": quiz,
                 "questions": questions,
                 "entries": entries,
+                "is_owner": is_owner,
                 "submitted": True,
                 "score": score,
                 "total": total,
                 "percent": percent,
-                "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
+                "show_answers": True,
+                "can_review": True,
                 "allow_submit": False,
                 "attempts_used": attempts_used_for_save,
                 "max_attempts": max_attempts,
                 "deadline_seconds": None,
                 "time_limit_seconds": None,
+                "attempt_history": attempt_obj.attempt_history,
             },
         )
 
