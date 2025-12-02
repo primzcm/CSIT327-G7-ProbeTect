@@ -48,7 +48,7 @@ class ClassroomJoinForm(forms.Form):
 class QuizAssignmentForm(forms.ModelForm):
     class Meta:
         model = QuizAssignment
-        fields = ["classroom", "quiz", "title", "due_at", "max_attempts", "show_answers"]
+        fields = ["classroom", "quiz", "title", "due_at", "max_attempts", "show_answers", "allow_review", "delay_score_until_due"]
         widgets = {
             "title": forms.TextInput(
                 attrs={
@@ -80,6 +80,16 @@ class QuizAssignmentForm(forms.ModelForm):
                 }
             ),
             "show_answers": forms.CheckboxInput(
+                attrs={
+                    "class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500",
+                }
+            ),
+            "allow_review": forms.CheckboxInput(
+                attrs={
+                    "class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500",
+                }
+            ),
+            "delay_score_until_due": forms.CheckboxInput(
                 attrs={
                     "class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500",
                 }

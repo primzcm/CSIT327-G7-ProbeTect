@@ -98,6 +98,14 @@ class QuizAssignment(models.Model):
         default=True,
         help_text="Show correct answers after submission.",
     )
+    allow_review = models.BooleanField(
+        default=True,
+        help_text="Let students review questions and their answers after submission.",
+    )
+    delay_score_until_due = models.BooleanField(
+        default=False,
+        help_text="If enabled, students only see their score after the quiz closes (after the due date).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

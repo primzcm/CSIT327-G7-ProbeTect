@@ -147,6 +147,20 @@ class GenerateQuizView(LoginRequiredMixin, View):
         return redirect(redirect_url)
 
 
+class GenerateQuizFromListView(GenerateQuizView):
+    """
+    Allow generating a quiz directly from the quizzes section by choosing a material.
+    """
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        try:
+            material_id = int(request.POST.get("material_id", ""))
+        except (TypeError, ValueError):
+            messages.error(request, "Please choose a material to generate a quiz from.")
+            return redirect("quizzes:list")
+        return super().post(request, material_id)
+
+
 class QuizListView(LoginRequiredMixin, View):
     template_name = 'quizzes/list.html'
 
@@ -222,7 +236,11 @@ class QuizScheduleView(LoginRequiredMixin, View):
         assignments_qs = assignments_qs.distinct().order_by("due_at", "created_at")
         assignments = list(assignments_qs)
 
-        # Preload attempts so we can highlight submitted quizzes without N+1 queries.
+        upcoming: list[QuizAssignment] = []
+        no_due: list[QuizAssignment] = []
+        past: list[QuizAssignment] = []
+
+        # Preload attempts so we can reason about remaining attempts without N+1 queries.
         attempts_by_assignment: dict[int, QuizAttempt] = {
             attempt.assignment_id: attempt
             for attempt in QuizAttempt.objects.filter(
@@ -231,18 +249,11 @@ class QuizScheduleView(LoginRequiredMixin, View):
             )
         }
 
-        # Attach a lightweight "user_attempt" attribute to each assignment instance
-        # for easy access in templates.
-        for assignment in assignments:
-            setattr(assignment, "user_attempt", attempts_by_assignment.get(assignment.id))
-
-        upcoming: list[QuizAssignment] = []
-        no_due: list[QuizAssignment] = []
-        past: list[QuizAssignment] = []
-
         for assignment in assignments:
             due_at = assignment.due_at
-            user_attempt = getattr(assignment, "user_attempt", None)
+            user_attempt = attempts_by_assignment.get(assignment.id)
+            attempts_used = getattr(user_attempt, "attempts_used", 0) if user_attempt else 0
+            max_attempts = assignment.max_attempts or 1
 
             if is_instructor:
                 # Instructors: only show assignments that are not past due.
@@ -253,15 +264,21 @@ class QuizScheduleView(LoginRequiredMixin, View):
                 else:
                     upcoming.append(assignment)
             else:
-                # Students: hide assignments once they have at least one attempt.
-                if user_attempt is not None:
-                    continue
+                # Students:
+                # - Show assignments with remaining attempts.
+                # - If overdue and never attempted, show in "Past" (missed).
+                # - Hide items once attempts are exhausted or overdue after at least one attempt.
+                has_remaining_attempts = attempts_used < max_attempts
+
                 if due_at is None:
-                    no_due.append(assignment)
+                    if has_remaining_attempts:
+                        no_due.append(assignment)
                 elif due_at >= now:
-                    upcoming.append(assignment)
-                else:
-                    past.append(assignment)
+                    if has_remaining_attempts:
+                        upcoming.append(assignment)
+                else:  # past due
+                    if attempts_used == 0:
+                        past.append(assignment)
 
         context = {
             "upcoming_assignments": upcoming,

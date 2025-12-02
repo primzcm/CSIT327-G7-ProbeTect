@@ -25,21 +25,47 @@
     {% if submitted %}
       <div class="mt-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-700 shadow-sm md:grid-cols-3">
         <div>
-          <p class="text-xs uppercase tracking-wide text-slate-400">Score</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900">{{ score }}/{{ total }}</p>
+          <p class="text-xs uppercase tracking-wide text-slate-400">Latest score</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900">
+            {% if not scores_hidden and score is not None and total is not None %}
+              {{ score }}/{{ total }}
+            {% else %}
+              N/A
+            {% endif %}
+          </p>
         </div>
         <div>
           <p class="text-xs uppercase tracking-wide text-slate-400">Accuracy</p>
-          <p class="mt-1 text-2xl font-semibold text-slate-900">{{ percent }}%</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-900">
+            {% if not scores_hidden and percent is not None %}
+              {{ percent }}%
+            {% else %}
+              N/A
+            {% endif %}
+          </p>
         </div>
         <div>
-          <p class="text-xs uppercase tracking-wide text-slate-400">Material</p>
-          <p class="mt-1 text-base text-slate-700">{{ quiz.material.title|default:"Material" }}</p>
+          <p class="text-xs uppercase tracking-wide text-slate-400">Attempts</p>
+          <p class="mt-1 text-base text-slate-700">{{ attempts_used }}/{{ max_attempts }}</p>
         </div>
       </div>
+
+      {% if attempt_history and not scores_hidden %}
+      <div class="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 shadow-sm">
+        <p class="font-semibold text-slate-900">Attempt history</p>
+        <div class="mt-2 space-y-1">
+          {% for item in attempt_history %}
+            <div class="flex items-center justify-between">
+              <span>Attempt {{ item.attempt }}</span>
+              <span>{{ item.score }}/{{ item.total }} ({{ item.percent }}%)</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     {% endif %}
 
-    {% if time_limit_seconds %}
+    {% if time_limit_seconds and allow_submit %}
     <div id="timer-display" class="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-center">
       <p class="text-sm font-medium text-amber-800">Time remaining: <span id="timer-text" class="text-lg font-bold"></span></p>
     </div>
@@ -54,6 +80,8 @@
     <form method="post" class="mt-8 space-y-8" id="quiz-form">
       {% csrf_token %}
       <input type="hidden" name="auto_submit" id="auto-submit-flag" value="">
+
+      {% if allow_submit or can_review or is_owner %}
       {% for entry in entries %}
         {% with question=entry.question result=entry.result %}
           <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -62,10 +90,12 @@
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Question {{ forloop.counter }}</p>
                 <h2 class="mt-2 text-lg font-semibold text-slate-900">{{ question.prompt|linebreaksbr }}</h2>
               </div>
-              {% if submitted and result %}
-                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {% if result.correct %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-600{% endif %}">
-                  {% if result.correct %}Correct{% else %}Incorrect{% endif %}
-                </span>
+              {% if submitted and result and can_review %}
+                {% if show_answers or is_owner %}
+                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {% if result.correct %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-600{% endif %}">
+                    {% if result.correct %}Correct{% else %}Incorrect{% endif %}
+                  </span>
+                {% endif %}
               {% endif %}
             </header>
 
@@ -95,10 +125,10 @@
                 </div>
               {% else %}
                 <input type="text" name="q_{{ question.id }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  placeholder="Type your answer here..." value="{% if result %}{{ result.user_answer }}{% endif %}" {% if submitted or not allow_submit %}disabled{% endif %}>
+                  placeholder="Type your answer here..." value="{% if result %}{{ result.user_answer }}{% endif %}" {% if not allow_submit %}disabled{% endif %}>
               {% endif %}
 
-              {% if submitted and result %}
+              {% if submitted and result and can_review %}
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                   <p><span class="font-semibold text-slate-900">Your answer:</span> {{ result.user_answer|default:"No answer" }}</p>
                   {% if show_answers %}
@@ -117,6 +147,7 @@
           </article>
         {% endwith %}
       {% endfor %}
+      {% endif %}
 
       {% if allow_submit %}
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -125,7 +156,10 @@
         </div>
       {% elif submitted %}
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-          <p class="font-semibold text-slate-900">You already submitted this quiz. Your score: {{ score }}/{{ total }} ({{ percent }}%).</p>
+          <p class="font-semibold text-slate-900">
+            You have used {{ attempts_used }} of {{ max_attempts }} attempt{{ max_attempts|pluralize }}.
+            Latest score: {{ score }}/{{ total }} ({{ percent }}%).
+          </p>
         </div>
       {% endif %}
     </form>

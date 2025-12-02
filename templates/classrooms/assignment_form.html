@@ -62,9 +62,19 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        {{ form.show_answers }}
-        <label class="text-sm font-medium text-slate-700" for="{{ form.show_answers.id_for_label }}">Show correct answers after submission</label>
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          {{ form.show_answers }}
+          <label class="text-sm font-medium text-slate-700" for="{{ form.show_answers.id_for_label }}">Show correct answers after submission (uncheck to hide the correct answers, which reduces cheating).</label>
+        </div>
+        <div class="flex items-center gap-2">
+          {{ form.allow_review }}
+          <label class="text-sm font-medium text-slate-700" for="{{ form.allow_review.id_for_label }}">Allow students to review questions and their own answers after submission.</label>
+        </div>
+        <div class="flex items-center gap-2">
+          {{ form.delay_score_until_due }}
+          <label class="text-sm font-medium text-slate-700" for="{{ form.delay_score_until_due.id_for_label }}">Delay showing scores to students until after the quiz closes (after the due date).</label>
+        </div>
       </div>
 
       <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Assign quiz</button>
