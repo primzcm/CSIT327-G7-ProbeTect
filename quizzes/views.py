@@ -6,7 +6,7 @@ from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -558,3 +558,20 @@ class QuizExportDOCXView(LoginRequiredMixin, View):
         except ImportError:
             messages.error(request, "DOCX export requires 'python-docx' package. Please install it.")
             return redirect('quizzes:detail', pk=pk)
+
+
+class QuizDeleteView(LoginRequiredMixin, View):
+    """
+    Delete a quiz owned by the current user.
+    Used from the dashboard and quizzes list screens.
+    """
+
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        quiz = get_object_or_404(Quiz, pk=pk, owner=request.user)
+        quiz.delete()
+        messages.success(request, "Quiz deleted.")
+
+        next_url = request.POST.get("next")
+        if next_url:
+            return redirect(next_url)
+        return redirect("quizzes:list")
