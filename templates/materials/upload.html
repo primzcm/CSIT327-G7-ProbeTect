@@ -100,7 +100,7 @@
         <h2 class="text-lg font-semibold text-slate-900">Recent uploads</h2>
         <a href="{% url 'materials:library' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">Manage library</a>
       </div>
-      <div class="mt-4 grid gap-4">
+      <div id="recent-uploads-section" class="mt-4 grid gap-4">
         {% if materials %}
           {% for material in materials %}
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -145,6 +145,26 @@
               </div>
             </div>
           {% endfor %}
+
+          {% if materials.paginator.num_pages > 1 %}
+            <nav class="mt-2 flex items-center justify-end gap-1 text-xs text-slate-600">
+              {% for page_num in materials.paginator.page_range %}
+                {% if page_num == materials.number %}
+                  <span class="rounded-lg bg-indigo-600 px-2.5 py-1 font-semibold text-white">
+                    {{ page_num }}
+                  </span>
+                {% else %}
+                  <a
+                    href="?page={{ page_num }}"
+                    class="rounded-lg px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-100"
+                    data-partial-target="recent-uploads-section"
+                  >
+                    {{ page_num }}
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </nav>
+          {% endif %}
         {% else %}
           <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
             You have not uploaded any PDFs yet. Your recent uploads will appear here with processing updates.
@@ -157,31 +177,61 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".generate-quiz-form").forEach((form) => {
-      const button = form.querySelector("[data-generate-button]");
-      const selects = form.querySelectorAll('select');
-      const progress = form.querySelector("[data-progress-container]");
+    const attachGenerateHandlers = (root = document) => {
+      root.querySelectorAll(".generate-quiz-form").forEach((form) => {
+        const button = form.querySelector("[data-generate-button]");
+        const selects = form.querySelectorAll("select");
+        const progress = form.querySelector("[data-progress-container]");
 
-      form.addEventListener(
-        "submit",
-        () => {
-          if (button) {
-            button.disabled = true;
-            button.classList.add("opacity-70", "cursor-not-allowed");
-            button.textContent = "Generating...";
+        form.addEventListener(
+          "submit",
+          () => {
+            if (button) {
+              button.disabled = true;
+              button.classList.add("opacity-70", "cursor-not-allowed");
+              button.textContent = "Generating...";
+            }
+            // Don't disable selects - disabled fields don't submit their values
+            // Just make them look disabled for UX
+            selects.forEach((select) => {
+              select.style.pointerEvents = "none";
+              select.classList.add("opacity-60");
+            });
+            if (progress) {
+              progress.classList.remove("hidden");
+            }
+          },
+          { once: true },
+        );
+      });
+    };
+
+    attachGenerateHandlers(document);
+
+    document.addEventListener("click", function (event) {
+      const link = event.target.closest("[data-partial-target='recent-uploads-section']");
+      if (!link) return;
+
+      event.preventDefault();
+      const url = link.getAttribute("href");
+      if (!url) return;
+
+      fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then((response) => response.text())
+        .then((html) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const newSection = doc.getElementById("recent-uploads-section");
+          const currentSection = document.getElementById("recent-uploads-section");
+          if (newSection && currentSection) {
+            currentSection.replaceWith(newSection);
+            attachGenerateHandlers(document.getElementById("recent-uploads-section"));
           }
-          // Don't disable selects - disabled fields don't submit their values
-          // Just make them look disabled for UX
-          selects.forEach(select => {
-            select.style.pointerEvents = 'none';
-            select.classList.add("opacity-60");
-          });
-          if (progress) {
-            progress.classList.remove("hidden");
-          }
-        },
-        { once: true },
-      );
+        })
+        .catch((error) => {
+          console.error("Failed to load uploads page:", error);
+          window.location.href = url;
+        });
     });
   });
 </script>
