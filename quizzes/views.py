@@ -6,7 +6,7 @@ from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -191,6 +191,85 @@ class QuizListView(LoginRequiredMixin, View):
             'available_materials': available_materials,
             'status_choices': Quiz.Status.choices,
         })
+
+
+class QuizScheduleView(LoginRequiredMixin, View):
+    """
+    Calendar-like schedule of quizzes with classroom due dates for the current user.
+    """
+
+    template_name = "quizzes/schedule.html"
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        from django.utils import timezone
+
+        now = timezone.now()
+        is_instructor = getattr(request.user, "is_instructor", lambda: False)()
+
+        # Base assignments queryset: quizzes tied to classes the user is involved with.
+        assignments_qs = (
+            QuizAssignment.objects.select_related("quiz", "classroom")
+            .filter(quiz__status=Quiz.Status.READY)
+        )
+
+        # Students see assignments for classes they are members of.
+        # Instructors see assignments for classes they own.
+        if is_instructor:
+            assignments_qs = assignments_qs.filter(classroom__owner=request.user)
+        else:
+            assignments_qs = assignments_qs.filter(classroom__memberships__user=request.user)
+
+        assignments_qs = assignments_qs.distinct().order_by("due_at", "created_at")
+        assignments = list(assignments_qs)
+
+        # Preload attempts so we can highlight submitted quizzes without N+1 queries.
+        attempts_by_assignment: dict[int, QuizAttempt] = {
+            attempt.assignment_id: attempt
+            for attempt in QuizAttempt.objects.filter(
+                user=request.user,
+                assignment__in=assignments_qs,
+            )
+        }
+
+        # Attach a lightweight "user_attempt" attribute to each assignment instance
+        # for easy access in templates.
+        for assignment in assignments:
+            setattr(assignment, "user_attempt", attempts_by_assignment.get(assignment.id))
+
+        upcoming: list[QuizAssignment] = []
+        no_due: list[QuizAssignment] = []
+        past: list[QuizAssignment] = []
+
+        for assignment in assignments:
+            due_at = assignment.due_at
+            user_attempt = getattr(assignment, "user_attempt", None)
+
+            if is_instructor:
+                # Instructors: only show assignments that are not past due.
+                if due_at and due_at < now:
+                    continue
+                if due_at is None:
+                    no_due.append(assignment)
+                else:
+                    upcoming.append(assignment)
+            else:
+                # Students: hide assignments once they have at least one attempt.
+                if user_attempt is not None:
+                    continue
+                if due_at is None:
+                    no_due.append(assignment)
+                elif due_at >= now:
+                    upcoming.append(assignment)
+                else:
+                    past.append(assignment)
+
+        context = {
+            "upcoming_assignments": upcoming,
+            "no_due_assignments": no_due,
+            "past_assignments": past,
+            "now": now,
+        }
+        return render(request, self.template_name, context)
 
 
 class QuizDetailView(LoginRequiredMixin, View):
@@ -558,3 +637,20 @@ class QuizExportDOCXView(LoginRequiredMixin, View):
         except ImportError:
             messages.error(request, "DOCX export requires 'python-docx' package. Please install it.")
             return redirect('quizzes:detail', pk=pk)
+
+
+class QuizDeleteView(LoginRequiredMixin, View):
+    """
+    Delete a quiz owned by the current user.
+    Used from the dashboard and quizzes list screens.
+    """
+
+    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
+        quiz = get_object_or_404(Quiz, pk=pk, owner=request.user)
+        quiz.delete()
+        messages.success(request, "Quiz deleted.")
+
+        next_url = request.POST.get("next")
+        if next_url:
+            return redirect(next_url)
+        return redirect("quizzes:list")

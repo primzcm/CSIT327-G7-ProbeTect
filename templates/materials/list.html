@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Your Materials Library - ProbeTect{% endblock %}
+
+{% block content %}
+<section class="bg-white py-12">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-indigo-500">Library</p>
+        <h1 class="mt-2 text-3xl font-semibold text-slate-900">Your materials</h1>
+        <p class="mt-2 text-sm text-slate-600">
+          View all files you&apos;ve uploaded to ProbeTect, open them in a new tab, or remove items you no longer need.
+        </p>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <a href="{% url 'materials:upload' %}" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+          Upload new PDF
+        </a>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      {% if materials %}
+        <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="hidden grid-cols-[2fr,1.25fr,1fr,auto] gap-4 border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid">
+            <div>Title</div>
+            <div>Subject &amp; visibility</div>
+            <div>Status</div>
+            <div class="text-right">Actions</div>
+          </div>
+          <div class="divide-y divide-slate-100">
+            {% for material in materials %}
+              <article class="flex flex-col gap-3 px-4 py-4 sm:grid sm:grid-cols-[2fr,1.25fr,1fr,auto] sm:items-center sm:gap-4">
+                <div>
+                  <p class="text-sm font-semibold text-slate-900">
+                    {{ material.title|default:"Untitled material" }}
+                  </p>
+                  {% if material.description %}
+                    <p class="mt-1 text-xs text-slate-500">
+                      {{ material.description|truncatewords:18 }}
+                    </p>
+                  {% endif %}
+                  <p class="mt-2 text-xs text-slate-400 sm:hidden">
+                    Uploaded {{ material.created_at|date:"M j, Y" }}
+                  </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5">
+                    {{ material.subject|default:"No subject" }}
+                  </span>
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5">
+                    {{ material.get_visibility_display }}
+                  </span>
+                </div>
+
+                <div class="flex flex-col gap-1 text-xs text-slate-600 sm:text-right">
+                  <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 sm:ml-auto">
+                    {{ material.get_status_display }}
+                  </span>
+                  <span class="hidden text-xs text-slate-400 sm:block">
+                    Uploaded {{ material.created_at|date:"M j, Y" }}
+                  </span>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <a
+                    href="{% url 'materials:public_file' material.id %}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600"
+                  >
+                    View file
+                  </a>
+                  <form method="post" action="{% url 'materials:delete' material.id %}" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button
+                      type="submit"
+                      class="inline-flex items-center justify-center rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 ring-1 ring-inset ring-rose-100 transition hover:bg-rose-100"
+                      onclick="return confirm('Delete this material? This action cannot be undone.')"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+          <p class="text-sm text-slate-600">
+            You haven&apos;t uploaded any materials yet.
+          </p>
+          <a href="{% url 'materials:upload' %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+            Upload your first PDF
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+

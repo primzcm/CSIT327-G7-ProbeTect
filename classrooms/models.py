@@ -89,6 +89,11 @@ class QuizAssignment(models.Model):
     )
     title = models.CharField(max_length=255, blank=True)
     due_at = models.DateTimeField(null=True, blank=True)
+    max_attempts = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Maximum attempts per student (leave blank for 1 attempt).",
+    )
     show_answers = models.BooleanField(
         default=True,
         help_text="Show correct answers after submission.",

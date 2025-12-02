@@ -114,6 +114,7 @@ class QuizAttempt(models.Model):
     total_questions = models.PositiveIntegerField(default=0)
     percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     answers = models.JSONField(default=dict, blank=True)
+    attempts_used = models.PositiveIntegerField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

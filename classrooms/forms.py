@@ -48,7 +48,7 @@ class ClassroomJoinForm(forms.Form):
 class QuizAssignmentForm(forms.ModelForm):
     class Meta:
         model = QuizAssignment
-        fields = ["classroom", "quiz", "title", "due_at", "show_answers"]
+        fields = ["classroom", "quiz", "title", "due_at", "max_attempts", "show_answers"]
         widgets = {
             "title": forms.TextInput(
                 attrs={
@@ -60,6 +60,13 @@ class QuizAssignmentForm(forms.ModelForm):
                 attrs={
                     "type": "datetime-local",
                     "class": "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200",
+                }
+            ),
+            "max_attempts": forms.NumberInput(
+                attrs={
+                    "class": "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200",
+                    "min": 1,
+                    "placeholder": "e.g., 1",
                 }
             ),
             "classroom": forms.Select(
@@ -111,6 +118,14 @@ class QuizAssignmentForm(forms.ModelForm):
         if due_at < now:
             raise forms.ValidationError("Due date must be in the future.")
         return due_at
+
+    def clean_max_attempts(self):
+        max_attempts = self.cleaned_data.get("max_attempts")
+        if max_attempts is None:
+            return None
+        if max_attempts < 1:
+            raise forms.ValidationError("Attempts must be at least 1.")
+        return max_attempts
 
 
 class LessonAssignForm(forms.Form):

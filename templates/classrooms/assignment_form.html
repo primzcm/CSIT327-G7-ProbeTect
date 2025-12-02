@@ -51,6 +51,17 @@
         </div>
       </div>
 
+      <div class="grid gap-6 md:grid-cols-2">
+        <div>
+          <label class="text-sm font-medium text-slate-700" for="{{ form.max_attempts.id_for_label }}">Attempts per student</label>
+          {{ form.max_attempts }}
+          {% if form.max_attempts.errors %}
+            <p class="text-sm text-rose-600">{{ form.max_attempts.errors.0 }}</p>
+          {% endif %}
+          <p class="mt-1 text-xs text-slate-500">Leave blank for a single attempt. Set a higher number to allow multiple submissions.</p>
+        </div>
+      </div>
+
       <div class="flex items-center gap-2">
         {{ form.show_answers }}
         <label class="text-sm font-medium text-slate-700" for="{{ form.show_answers.id_for_label }}">Show correct answers after submission</label>
