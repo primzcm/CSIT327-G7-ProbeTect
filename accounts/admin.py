@@ -8,7 +8,19 @@ from .models import User
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Role", {"fields": ("role",)}),
-        ("Profile", {"fields": ("headline", "bio", "profile_photo")}),
+        (
+            "Profile",
+            {
+                "fields": (
+                    "headline",
+                    "bio",
+                    "profile_photo_public_url",
+                    "profile_photo_storage_path",
+                    "profile_photo_bucket",
+                    "profile_photo",
+                )
+            },
+        ),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         (None, {"classes": ("wide",), "fields": ("username", "password1", "password2", "role")}),

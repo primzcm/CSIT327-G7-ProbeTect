@@ -2,6 +2,14 @@
 
 Record of notable changes to code and docs. Add entries with date, scope, and brief summary.
 
+## 2025-12-02 - Supabase-backed avatars
+
+- Accounts: Profile photos now upload to Supabase Storage under `avatars/{user_id}/...` with stored public URLs and storage paths on the user record.
+- UI: Profile and public profile templates render the Supabase URL first with local media as a fallback; admin exposes the new avatar fields for inspection.
+- Data: Added migration `accounts/0003_user_supabase_avatar.py` to track Supabase avatar metadata and delete old local images after successful uploads.
+- Config: Added `SUPABASE_AVATAR_BUCKET` to target a dedicated bucket that allows PNG/JPEG for profile photos (falls back to the default storage bucket if unset).
+- Tests: Updated account profile form tests to mock Supabase uploads and ensure replacement cleans up prior assets.
+
 ## 2025-11-22 - Classrooms & quiz sharing
 
 - Classrooms: Added a new app with class creation for instructors, join-by-code for students, and class detail pages.
