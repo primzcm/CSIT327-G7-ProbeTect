@@ -68,7 +68,7 @@
       </form>
     </div>
 
-    <div class="mt-8 space-y-4">
+    <div id="quiz-list-section" class="mt-8 space-y-4">
         {% if material %}
         <form method="post" action="{% url 'quizzes:generate' material.id %}" class="mb-8 max-w-xl rounded-2xl border border-slate-200 bg-slate-50 p-6">
           {% csrf_token %}
@@ -200,6 +200,26 @@
             </div>
           </article>
         {% endfor %}
+
+        {% if quizzes.paginator.num_pages > 1 %}
+          <nav class="mt-6 flex items-center justify-end gap-1 text-xs text-slate-600">
+            {% for page_num in quizzes.paginator.page_range %}
+              {% if page_num == quizzes.number %}
+                <span class="rounded-lg bg-indigo-600 px-2.5 py-1 font-semibold text-white">
+                  {{ page_num }}
+                </span>
+              {% else %}
+                <a
+                  href="?{% if base_querystring %}{{ base_querystring }}&{% endif %}page={{ page_num }}"
+                  class="rounded-lg px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-100"
+                  data-partial-target="quiz-list-section"
+                >
+                  {{ page_num }}
+                </a>
+              {% endif %}
+            {% endfor %}
+          </nav>
+        {% endif %}
       {% else %}
         <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
           <p class="text-sm text-slate-600">You have not generated any quizzes yet.</p>
@@ -209,4 +229,32 @@
     </div>
   </div>
 </section>
+
+<script>
+  document.addEventListener("click", function (event) {
+    const link = event.target.closest("[data-partial-target='quiz-list-section']");
+    if (!link) return;
+
+    event.preventDefault();
+    const url = link.getAttribute("href");
+    if (!url) return;
+
+    fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then((response) => response.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newSection = doc.getElementById("quiz-list-section");
+        const currentSection = document.getElementById("quiz-list-section");
+        if (newSection && currentSection) {
+          currentSection.replaceWith(newSection);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load page:", error);
+        window.location.href = url;
+      });
+  });
+</script>
+
 {% endblock %}
