@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.core.paginator import Paginator
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
@@ -99,13 +100,22 @@ class ClassroomDetailView(LoginRequiredMixin, View):
             return redirect("classrooms:list")
 
         memberships = classroom.memberships.select_related("user")
-        assignments = classroom.assignments.select_related("quiz", "quiz__material").prefetch_related(
+        assignments_qs = classroom.assignments.select_related("quiz", "quiz__material").prefetch_related(
             "attempts__user"
-        )
+        ).order_by("-created_at")
+        
+        # Paginate assignments - 10 per page
+        paginator = Paginator(assignments_qs, 10)
+        page_number = request.GET.get("assignments_page", 1)
+        try:
+            assignments_page = paginator.page(page_number)
+        except Exception:
+            assignments_page = paginator.page(1)
+        
         is_owner = classroom.owner_id == request.user.id
         attempts_by_assignment: dict[int, list[QuizAttempt]] = {}
         user_attempts: dict[int, QuizAttempt | None] = {}
-        for assignment in assignments:
+        for assignment in assignments_page:
             attempts = list(assignment.attempts.all())
             attempts_by_assignment[assignment.id] = attempts
             user_attempts[assignment.id] = next((a for a in attempts if a.user_id == request.user.id), None)
@@ -117,7 +127,7 @@ class ClassroomDetailView(LoginRequiredMixin, View):
             {
                 "classroom": classroom,
                 "memberships": memberships,
-                "assignments": assignments,
+                "assignments": assignments_page,
                 "is_owner": is_owner,
                 "attempts_by_assignment": attempts_by_assignment,
                 "user_attempts": user_attempts,

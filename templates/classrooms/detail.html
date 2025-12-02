@@ -37,7 +37,8 @@
             {% endif %}
           </div>
           {% now "U" as now_ts %}
-          <div class="mt-4 space-y-3">
+          <div id="assignments-container">
+            <div id="assignments-section" class="mt-4 space-y-3">
             {% if assignments %}
               {% for assignment in assignments %}
                 <div class="rounded-2xl border border-slate-200 p-4">
@@ -153,6 +154,24 @@
                 {% endif %}
               </div>
             {% endif %}
+            </div>
+            {% if assignments.paginator.num_pages > 1 %}
+              <div class="mt-4 flex items-center justify-center gap-2" id="assignments-pagination-bottom">
+                {% if assignments.has_previous %}
+                  <a href="?assignments_page={{ assignments.previous_page_number }}" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600" data-partial-target="assignments-container">Previous</a>
+                {% endif %}
+                {% for page_num in assignments.paginator.page_range %}
+                  {% if page_num == assignments.number %}
+                    <span class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white">{{ page_num }}</span>
+                  {% else %}
+                    <a href="?assignments_page={{ page_num }}" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600" data-partial-target="assignments-container">{{ page_num }}</a>
+                  {% endif %}
+                {% endfor %}
+                {% if assignments.has_next %}
+                  <a href="?assignments_page={{ assignments.next_page_number }}" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600" data-partial-target="assignments-container">Next</a>
+                {% endif %}
+              </div>
+            {% endif %}
           </div>
         </div>
 
@@ -215,4 +234,59 @@
     </div>
   </div>
 </section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Handle partial page updates for assignments pagination
+    function attachPaginationHandlers() {
+      document.querySelectorAll('a[data-partial-target="assignments-container"]').forEach((link) => {
+        link.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const url = link.getAttribute("href");
+          if (!url) return;
+
+          try {
+            const response = await fetch(url, {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+              },
+            });
+            if (!response.ok) {
+              window.location.href = url;
+              return;
+            }
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            
+            // Find the assignments container in the new HTML
+            const newContainer = doc.querySelector("#assignments-container");
+            
+            if (newContainer) {
+              // Replace the entire assignments container (includes pagination top, list, pagination bottom)
+              const currentContainer = document.querySelector("#assignments-container");
+              if (currentContainer) {
+                currentContainer.innerHTML = newContainer.innerHTML;
+              }
+              
+              // Re-attach event listeners to new pagination links
+              attachPaginationHandlers();
+              
+              // Update URL without reload
+              window.history.pushState({}, "", url);
+            } else {
+              // Fallback to full page reload if partial update fails
+              window.location.href = url;
+            }
+          } catch (error) {
+            console.error("Error loading assignments:", error);
+            window.location.href = url;
+          }
+        });
+      });
+    }
+    
+    attachPaginationHandlers();
+  });
+</script>
 {% endblock %}
