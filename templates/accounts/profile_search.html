@@ -50,9 +50,9 @@
             >
               <div class="flex items-start gap-4">
                 <div class="flex-shrink-0">
-                  {% if user.profile_photo %}
+                  {% if user.profile_photo_url %}
                     <img
-                      src="{{ user.profile_photo.url }}"
+                      src="{{ user.profile_photo_url }}"
                       alt="{{ user.get_full_name|default:user.username }}"
                       class="h-12 w-12 rounded-full object-cover"
                     >

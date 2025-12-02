@@ -52,8 +52,8 @@
     <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
       <div class="flex flex-col items-center gap-4 text-center">
         <div class="h-36 w-36 overflow-hidden rounded-full border border-slate-700 bg-slate-200 shadow-inner dark:bg-slate-800">
-          {% if profile_user.profile_photo %}
-            <img src="{{ profile_user.profile_photo.url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }} avatar" class="h-full w-full object-cover">
+          {% if profile_user.profile_photo_url %}
+            <img src="{{ profile_user.profile_photo_url }}" alt="{{ profile_user.get_full_name|default:profile_user.username }} avatar" class="h-full w-full object-cover">
           {% else %}
             <div class="flex h-full w-full items-center justify-center text-4xl font-semibold text-indigo-600 dark:text-indigo-200">
               {{ profile_user.first_name|default:profile_user.username|first|upper }}

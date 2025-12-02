@@ -17,8 +17,8 @@
     <div class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-sm">
       <div class="flex flex-col items-center gap-4 text-center">
         <div class="h-36 w-36 overflow-hidden rounded-full border border-slate-700 bg-slate-800 shadow-inner">
-          {% if user.profile_photo %}
-            <img src="{{ user.profile_photo.url }}" alt="{{ user.get_full_name|default:user.username }} avatar" class="h-full w-full object-cover">
+          {% if user.profile_photo_url %}
+            <img src="{{ user.profile_photo_url }}" alt="{{ user.get_full_name|default:user.username }} avatar" class="h-full w-full object-cover">
           {% else %}
             <div class="flex h-full w-full items-center justify-center text-4xl font-semibold text-indigo-200">
               {{ user.first_name|default:user.username|first|upper }}
@@ -105,7 +105,7 @@
             <h3 class="text-base font-semibold text-white">Learning profile</h3>
             <div>
               <label for="{{ form.headline.id_for_label }}" class="mb-2 block text-sm font-medium text-slate-200">
-                Headline <span class="text-slate-500">(optional)</span>
+                Headline
               </label>
               {{ form.headline }}
               {% if form.headline.errors %}
@@ -114,7 +114,7 @@
             </div>
             <div>
               <label for="{{ form.bio.id_for_label }}" class="mb-2 block text-sm font-medium text-slate-200">
-                Bio <span class="text-slate-500">(optional)</span>
+                Bio
               </label>
               {{ form.bio }}
               {% if form.bio.errors %}
@@ -125,7 +125,7 @@
 
           <div class="space-y-3">
             <h3 class="text-base font-semibold text-white">Profile photo</h3>
-            <p class="text-sm text-slate-400">Upload square JPG or PNG up to 5 MB. Leave blank to keep the current image.</p>
+            <p class="text-sm text-slate-400">Upload square JPG or PNG up to 10 MB. Leave blank to keep the current image.</p>
             <div class="drop-panel">
               <label for="{{ form.profile_photo.id_for_label }}" class="mb-2 block text-sm font-medium text-slate-200">Upload photo</label>
               {{ form.profile_photo }}
@@ -133,11 +133,20 @@
                 <p class="mt-2 text-sm text-rose-400">{{ form.profile_photo.errors }}</p>
               {% endif %}
             </div>
+            {% if user.profile_photo_url %}
+              <label class="flex items-center gap-2 text-sm text-slate-300">
+                {{ form.remove_profile_photo }}
+                <span>Remove current photo</span>
+              </label>
+              {% if form.remove_profile_photo.errors %}
+                <p class="mt-1 text-sm text-rose-400">{{ form.remove_profile_photo.errors }}</p>
+              {% endif %}
+            {% endif %}
             <p class="text-xs text-slate-500">{{ form.profile_photo.help_text }}</p>
           </div>
 
           <div class="flex items-center justify-between pt-2">
-            <a href="{% url 'dashboard' %}" class="text-sm text-slate-400 transition hover:text-white">Back to dashboard</a>
+            <a href="{% url 'dashboard' %}" class="text-sm font-medium text-indigo-400 transition hover:text-indigo-200">Back to dashboard</a>
           </div>
         </form>
       {% else %}

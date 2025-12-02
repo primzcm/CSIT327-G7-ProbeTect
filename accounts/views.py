@@ -9,6 +9,7 @@ from django.views import View
 
 from .forms import EmailAuthenticationForm, InstructorSignUpForm, StudentSignUpForm, UserProfileForm
 from .models import User
+from materials.supabase import SupabaseStorageError
 
 
 class AuthenticatedRedirectMixin:
@@ -122,9 +123,12 @@ class ProfileView(LoginRequiredMixin, View):
     def post(self, request):
         form = UserProfileForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Profile updated.")
-            return redirect("profile")
+            try:
+                form.save()
+                messages.success(request, "Profile updated.")
+                return redirect("profile")
+            except SupabaseStorageError as exc:
+                form.add_error("profile_photo", f"Could not upload profile photo: {exc}")
         context = {"form": form, "edit_mode": True}
         context.update(self._get_related_counts(request))
         return render(request, self.template_name, context)
