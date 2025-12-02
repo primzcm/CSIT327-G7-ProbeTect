@@ -2,26 +2,45 @@
 
 {% block title %}Classes - ProbeTect{% endblock %}
 
+{% block head_extra %}
+<style>
+  .class-form input,
+  .class-form textarea,
+  .class-form select {
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.65rem;
+    min-height: 2.5rem;
+  }
+  .class-form textarea {
+    min-height: 6.5rem;
+  }
+  .class-form label {
+    margin-bottom: 0.35rem;
+  }
+  .empty-enrolled {
+    border-color: rgba(203, 213, 225, 0.6);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="bg-white py-12">
+<section class="bg-white pt-12 pb-16">
   <div class="mx-auto max-w-6xl px-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex flex-col gap-3">
       <div>
         <p class="text-sm uppercase tracking-[0.2em] text-indigo-500">Classes</p>
         <h1 class="mt-2 text-3xl font-semibold text-slate-900">Share quizzes with your students</h1>
         <p class="mt-2 text-sm text-slate-600">Create a class, share the join code, then assign any ready quiz.</p>
       </div>
-      <div class="flex gap-2">
-        <a href="{% url 'quizzes:list' %}" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Back to quizzes</a>
-      </div>
+      <a href="{% url 'quizzes:list' %}" class="w-fit rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600">Back to quizzes</a>
     </div>
 
     <div class="mt-8 grid gap-6 lg:grid-cols-2">
       {% if user.is_instructor %}
-      <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+      <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
         <h2 class="text-lg font-semibold text-slate-900">Create a class</h2>
         <p class="mt-2 text-sm text-slate-600">Students join using the generated code.</p>
-        <form method="post" action="{% url 'classrooms:create' %}" class="mt-4 space-y-4">
+        <form method="post" action="{% url 'classrooms:create' %}" class="mt-4 space-y-3 class-form">
           {% csrf_token %}
           {{ create_form.non_field_errors }}
           <div>
@@ -43,10 +62,10 @@
       </div>
       {% endif %}
 
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-semibold text-slate-900">Join a class</h2>
         <p class="mt-2 text-sm text-slate-600">Enter the class code shared by your instructor.</p>
-        <form method="post" action="{% url 'classrooms:join' %}" class="mt-4 space-y-4">
+        <form method="post" action="{% url 'classrooms:join' %}" class="mt-3 space-y-3 class-form">
           {% csrf_token %}
           {{ join_form.non_field_errors }}
           <div>
@@ -56,7 +75,7 @@
               <p class="text-sm text-rose-600">{{ join_form.code.errors.0 }}</p>
             {% endif %}
           </div>
-          <button type="submit" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">Join class</button>
+          <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">Join class</button>
         </form>
       </div>
     </div>
@@ -69,7 +88,7 @@
             <span class="text-xs font-semibold text-slate-500">{{ owned_classes|length }} total</span>
           {% endif %}
         </div>
-        <div class="mt-4 space-y-4">
+        <div class="mt-6 space-y-4">
           {% if owned_classes %}
             {% for classroom in owned_classes %}
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200">
@@ -101,7 +120,7 @@
           <h3 class="text-lg font-semibold text-slate-900">Enrolled classes</h3>
           <span class="text-xs font-semibold text-slate-500">{{ enrolled_classes|length }} total</span>
         </div>
-        <div class="mt-4 space-y-4">
+        <div class="mt-6 space-y-4">
           {% if enrolled_classes %}
             {% for classroom in enrolled_classes %}
               <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200">
@@ -118,8 +137,8 @@
               </article>
             {% endfor %}
           {% else %}
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-              <p>You have not joined any classes yet.</p>
+            <div class="flex items-center justify-center rounded-2xl border border-dashed empty-enrolled bg-white p-5 text-center text-sm text-slate-500">
+              <p class="py-3">You have not joined any classes yet.</p>
             </div>
           {% endif %}
         </div>
