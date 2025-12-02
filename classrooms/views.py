@@ -259,11 +259,14 @@ class AssignmentTakeView(LoginRequiredMixin, View):
 
         submitted = False
         score = total = percent = None
+        attempts_used = 0
+        max_attempts = assignment.max_attempts or 1
         if existing_attempt:
             submitted = True
             score = existing_attempt.score
             total = existing_attempt.total_questions
             percent = float(existing_attempt.percent)
+            attempts_used = existing_attempt.attempts_used
             for entry in entries:
                 qid = str(entry["question"].id)
                 stored = existing_attempt.answers.get(qid, {})
@@ -272,10 +275,12 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                     "correct": stored.get("correct", False),
                 }
 
-        allow_submit = assignment.quiz.status == Quiz.Status.READY and not submitted
-        if assignment.due_at and now >= assignment.due_at and not submitted and assignment.classroom.owner_id != request.user.id:
-            allow_submit = False
-            messages.error(request, "This assignment is past the deadline.")
+        allow_submit = assignment.quiz.status == Quiz.Status.READY
+        if assignment.classroom.owner_id != request.user.id:
+            if assignment.due_at and now >= assignment.due_at:
+                allow_submit = False
+            elif attempts_used >= max_attempts:
+                allow_submit = False
         return render(
             request,
             self.template_name,
@@ -289,6 +294,8 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "score": score,
                 "total": total,
                 "percent": percent,
+                "attempts_used": attempts_used,
+                "max_attempts": max_attempts,
                 "allow_submit": allow_submit,
                 "deadline_seconds": deadline_seconds,
                 "time_limit_seconds": time_limit_seconds,
@@ -303,42 +310,51 @@ class AssignmentTakeView(LoginRequiredMixin, View):
         quiz = assignment.quiz
         questions = list(quiz.questions.all())
 
-        # Enforce single attempt for students (owners can preview)
+        existing_attempt = None
+        max_attempts = assignment.max_attempts or 1
+        attempts_used = 0
         if assignment.classroom.owner_id != request.user.id:
             existing_attempt = QuizAttempt.objects.filter(assignment=assignment, user=request.user).first()
             if existing_attempt:
-                messages.info(request, "You have already submitted this quiz.")
-                entries = []
-                for question in questions:
-                    qid = str(question.id)
-                    stored = existing_attempt.answers.get(qid, {})
-                    entries.append(
+                attempts_used = existing_attempt.attempts_used
+            if attempts_used >= max_attempts:
+                # Student has exhausted attempts; show last attempt summary.
+                messages.info(request, f"You have used all {max_attempts} attempt(s) for this quiz.")
+                if existing_attempt:
+                    entries = []
+                    for question in questions:
+                        qid = str(question.id)
+                        stored = existing_attempt.answers.get(qid, {})
+                        entries.append(
+                            {
+                                "question": question,
+                                "result": {
+                                    "user_answer": stored.get("user_answer", ""),
+                                    "correct": stored.get("correct", False),
+                                },
+                            }
+                        )
+                    return render(
+                        request,
+                        self.template_name,
                         {
-                            "question": question,
-                            "result": {
-                                "user_answer": stored.get("user_answer", ""),
-                                "correct": stored.get("correct", False),
-                            },
-                        }
+                            "assignment": assignment,
+                            "quiz": quiz,
+                            "questions": questions,
+                            "entries": entries,
+                            "submitted": True,
+                            "score": existing_attempt.score,
+                            "total": existing_attempt.total_questions,
+                            "percent": float(existing_attempt.percent),
+                            "show_answers": assignment.show_answers
+                            or assignment.classroom.owner_id == request.user.id,
+                            "allow_submit": False,
+                            "deadline_seconds": None,
+                            "time_limit_seconds": None,
+                            "attempts_used": attempts_used,
+                            "max_attempts": max_attempts,
+                        },
                     )
-                return render(
-                    request,
-                    self.template_name,
-                    {
-                        "assignment": assignment,
-                        "quiz": quiz,
-                        "questions": questions,
-                        "entries": entries,
-                "submitted": True,
-                "score": existing_attempt.score,
-                "total": existing_attempt.total_questions,
-                "percent": float(existing_attempt.percent),
-                "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
-                "allow_submit": False,
-                "deadline_seconds": None,
-                "time_limit_seconds": None,
-            },
-        )
 
         now = timezone.now()
         if (
@@ -359,6 +375,13 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "correct": entry["result"]["correct"],
             }
 
+        # Update or create the user's attempt record, tracking how many times they've submitted.
+        if existing_attempt:
+            attempts_used = existing_attempt.attempts_used
+        attempts_used_for_save = attempts_used
+        if assignment.classroom.owner_id != request.user.id:
+            attempts_used_for_save = attempts_used + 1
+
         QuizAttempt.objects.update_or_create(
             assignment=assignment,
             user=request.user,
@@ -368,6 +391,7 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "total_questions": total,
                 "percent": percent,
                 "answers": answers_payload,
+                "attempts_used": attempts_used_for_save,
             },
         )
 
@@ -386,6 +410,8 @@ class AssignmentTakeView(LoginRequiredMixin, View):
                 "percent": percent,
                 "show_answers": assignment.show_answers or assignment.classroom.owner_id == request.user.id,
                 "allow_submit": False,
+                "attempts_used": attempts_used_for_save,
+                "max_attempts": max_attempts,
                 "deadline_seconds": None,
                 "time_limit_seconds": None,
             },
