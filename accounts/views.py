@@ -114,7 +114,8 @@ class ProfileView(LoginRequiredMixin, View):
 
     def get(self, request):
         form = UserProfileForm(instance=request.user)
-        context = {"form": form}
+        edit_mode = request.GET.get("edit") in {"1", "true", "yes"}
+        context = {"form": form, "edit_mode": edit_mode}
         context.update(self._get_related_counts(request))
         return render(request, self.template_name, context)
 
@@ -124,7 +125,7 @@ class ProfileView(LoginRequiredMixin, View):
             form.save()
             messages.success(request, "Profile updated.")
             return redirect("profile")
-        context = {"form": form}
+        context = {"form": form, "edit_mode": True}
         context.update(self._get_related_counts(request))
         return render(request, self.template_name, context)
 
