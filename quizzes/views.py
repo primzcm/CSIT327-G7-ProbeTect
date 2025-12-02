@@ -6,6 +6,7 @@ from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -166,7 +167,7 @@ class QuizListView(LoginRequiredMixin, View):
 
     def get(self, request, material_id: int | None = None):
         from django.db.models import Q
-        
+
         quizzes = Quiz.objects.filter(owner=request.user).select_related('material')
         material = None
         if material_id:
@@ -192,18 +193,30 @@ class QuizListView(LoginRequiredMixin, View):
             quizzes = quizzes.filter(material_id=material_filter)
         
         quizzes = quizzes.order_by('-created_at')
-        
+
+        # Pagination: 10 quizzes per page
+        page_number = request.GET.get("page") or 1
+        paginator = Paginator(quizzes, 10)
+        quizzes_page = paginator.get_page(page_number)
+
+        # Preserve current filters in pagination links (without the page parameter)
+        query_params = request.GET.copy()
+        if "page" in query_params:
+            del query_params["page"]
+        base_querystring = query_params.urlencode()
+
         # Get available materials for filter dropdown
         available_materials = Material.objects.filter(owner=request.user).order_by('-created_at')
         
         return render(request, self.template_name, {
-            'quizzes': quizzes,
+            'quizzes': quizzes_page,
             'material': material,
             'search_query': search_query,
             'status_filter': status_filter,
             'material_filter': material_filter,
             'available_materials': available_materials,
             'status_choices': Quiz.Status.choices,
+            'base_querystring': base_querystring,
         })
 
 
@@ -280,10 +293,26 @@ class QuizScheduleView(LoginRequiredMixin, View):
                     if attempts_used == 0:
                         past.append(assignment)
 
+        # Paginate each section independently (6 per page)
+        upcoming_page_number = request.GET.get("upcoming_page") or 1
+        no_due_page_number = request.GET.get("no_due_page") or 1
+        past_page_number = request.GET.get("past_page") or 1
+
+        upcoming_paginator = Paginator(upcoming, 6)
+        no_due_paginator = Paginator(no_due, 6)
+        past_paginator = Paginator(past, 6)
+
+        upcoming_page = upcoming_paginator.get_page(upcoming_page_number)
+        no_due_page = no_due_paginator.get_page(no_due_page_number)
+        past_page = past_paginator.get_page(past_page_number)
+
         context = {
             "upcoming_assignments": upcoming,
             "no_due_assignments": no_due,
             "past_assignments": past,
+            "upcoming_page": upcoming_page,
+            "no_due_page": no_due_page,
+            "past_page": past_page,
             "now": now,
         }
         return render(request, self.template_name, context)

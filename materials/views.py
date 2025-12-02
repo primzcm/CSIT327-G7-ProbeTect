@@ -18,17 +18,31 @@ class MaterialUploadView(LoginRequiredMixin, View):
     form_class = MaterialUploadForm
 
     def get(self, request: HttpRequest) -> HttpResponse:
+        from django.core.paginator import Paginator
+
         form = self.form_class()
-        materials = request.user.materials.all()[:10]
-        return render(request, self.template_name, {
-            "form": form,
-            "materials": materials,
-            "QuizQuestion": QuizQuestion
-        })
+        materials_qs = request.user.materials.all().order_by("-created_at")
+        paginator = Paginator(materials_qs, 10)
+        page_number = request.GET.get("page") or 1
+        materials_page = paginator.get_page(page_number)
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "materials": materials_page,
+                "QuizQuestion": QuizQuestion,
+            },
+        )
 
     def post(self, request: HttpRequest) -> HttpResponse:
+        from django.core.paginator import Paginator
+
         form = self.form_class(request.POST, request.FILES)
-        materials = request.user.materials.all()[:10]
+        materials_qs = request.user.materials.all().order_by("-created_at")
+        paginator = Paginator(materials_qs, 10)
+        page_number = request.GET.get("page") or 1
+        materials_page = paginator.get_page(page_number)
         if form.is_valid():
             pdf_file = form.cleaned_data["pdf"]
             try:
@@ -53,11 +67,15 @@ class MaterialUploadView(LoginRequiredMixin, View):
                 return redirect("materials:upload")
         if form.errors:
             messages.error(request, "Please correct the errors below.")
-        return render(request, self.template_name, {
-            "form": form,
-            "materials": materials,
-            "QuizQuestion": QuizQuestion
-        })
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "materials": materials_page,
+                "QuizQuestion": QuizQuestion,
+            },
+        )
 
 
 class MaterialPublicDownloadView(LoginRequiredMixin, View):

@@ -23,11 +23,11 @@
       <div class="md:col-span-2 space-y-6">
         {% if upcoming_assignments or no_due_assignments or past_assignments %}
           {% if upcoming_assignments %}
-            <section>
+            <section id="upcoming-section">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Upcoming</h2>
               <p class="mt-1 text-xs text-slate-500">Quizzes with deadlines still open.</p>
               <div class="mt-4 space-y-3">
-                {% for assignment in upcoming_assignments %}
+                {% for assignment in upcoming_page %}
                   {% with quiz=assignment.quiz classroom=assignment.classroom attempt=assignment.user_attempt %}
                   <article class="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -64,15 +64,35 @@
                   {% endwith %}
                 {% endfor %}
               </div>
+
+              {% if upcoming_page.paginator.num_pages > 1 %}
+                <nav class="mt-4 flex items-center justify-end gap-1 text-xs text-slate-600">
+                  {% for page_num in upcoming_page.paginator.page_range %}
+                    {% if page_num == upcoming_page.number %}
+                      <span class="rounded-lg bg-emerald-600 px-2.5 py-1 font-semibold text-white">
+                        {{ page_num }}
+                      </span>
+                    {% else %}
+                      <a
+                        href="?upcoming_page={{ page_num }}&no_due_page={{ no_due_page.number }}&past_page={{ past_page.number }}"
+                        class="rounded-lg px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-100"
+                        data-partial-target="upcoming-section"
+                      >
+                        {{ page_num }}
+                      </a>
+                    {% endif %}
+                  {% endfor %}
+                </nav>
+              {% endif %}
             </section>
           {% endif %}
 
           {% if no_due_assignments %}
-            <section class="mt-8">
+            <section id="no-due-section" class="mt-8">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-700">No due date</h2>
               <p class="mt-1 text-xs text-slate-500">Assigned quizzes without a set deadline.</p>
               <div class="mt-4 space-y-3">
-                {% for assignment in no_due_assignments %}
+                {% for assignment in no_due_page %}
                   {% with quiz=assignment.quiz classroom=assignment.classroom attempt=assignment.user_attempt %}
                   <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -109,15 +129,35 @@
                   {% endwith %}
                 {% endfor %}
               </div>
+
+              {% if no_due_page.paginator.num_pages > 1 %}
+                <nav class="mt-4 flex items-center justify-end gap-1 text-xs text-slate-600">
+                  {% for page_num in no_due_page.paginator.page_range %}
+                    {% if page_num == no_due_page.number %}
+                      <span class="rounded-lg bg-slate-700 px-2.5 py-1 font-semibold text-white">
+                        {{ page_num }}
+                      </span>
+                    {% else %}
+                      <a
+                        href="?upcoming_page={{ upcoming_page.number }}&no_due_page={{ page_num }}&past_page={{ past_page.number }}"
+                        class="rounded-lg px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-100"
+                        data-partial-target="no-due-section"
+                      >
+                        {{ page_num }}
+                      </a>
+                    {% endif %}
+                  {% endfor %}
+                </nav>
+              {% endif %}
             </section>
           {% endif %}
 
           {% if past_assignments %}
-            <section class="mt-8">
+            <section id="past-section" class="mt-8">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-rose-700">Past</h2>
               <p class="mt-1 text-xs text-slate-500">Quizzes whose deadlines have passed.</p>
               <div class="mt-4 space-y-3">
-                {% for assignment in past_assignments %}
+                {% for assignment in past_page %}
                   {% with quiz=assignment.quiz classroom=assignment.classroom attempt=assignment.user_attempt %}
                   <article class="rounded-2xl border border-rose-100 bg-rose-50/70 p-4 shadow-sm">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -148,6 +188,26 @@
                   {% endwith %}
                 {% endfor %}
               </div>
+
+              {% if past_page.paginator.num_pages > 1 %}
+                <nav class="mt-4 flex items-center justify-end gap-1 text-xs text-slate-600">
+                  {% for page_num in past_page.paginator.page_range %}
+                    {% if page_num == past_page.number %}
+                      <span class="rounded-lg bg-rose-600 px-2.5 py-1 font-semibold text-white">
+                        {{ page_num }}
+                      </span>
+                    {% else %}
+                      <a
+                        href="?upcoming_page={{ upcoming_page.number }}&no_due_page={{ no_due_page.number }}&past_page={{ page_num }}"
+                        class="rounded-lg px-2.5 py-1 font-medium text-slate-600 hover:bg-slate-100"
+                        data-partial-target="past-section"
+                      >
+                        {{ page_num }}
+                      </a>
+                    {% endif %}
+                  {% endfor %}
+                </nav>
+              {% endif %}
             </section>
           {% endif %}
         {% else %}
@@ -209,6 +269,39 @@
     </div>
   </div>
 </section>
+
+<script>
+  document.addEventListener("click", function (event) {
+    const link =
+      event.target.closest("[data-partial-target='upcoming-section']") ||
+      event.target.closest("[data-partial-target='no-due-section']") ||
+      event.target.closest("[data-partial-target='past-section']");
+
+    if (!link) return;
+
+    event.preventDefault();
+    const url = link.getAttribute("href");
+    if (!url) return;
+
+    fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then((response) => response.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        ["upcoming-section", "no-due-section", "past-section"].forEach((id) => {
+          const newEl = doc.getElementById(id);
+          const currentEl = document.getElementById(id);
+          if (newEl && currentEl) {
+            currentEl.replaceWith(newEl);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to load schedule page:", error);
+        window.location.href = url;
+      });
+  });
+</script>
+
 {% endblock %}
-
-
