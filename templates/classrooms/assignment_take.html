@@ -103,24 +103,24 @@
               {% if question.question_type == 'multiple_choice' %}
                 <div class="space-y-3">
                   {% for choice in question.choices %}
-                    <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == choice %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
+                    <label class="option-card {% if result and result.user_answer == choice %}is-checked{% endif %}">
                       <input type="radio" name="q_{{ question.id }}" value="{{ choice }}" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                        {% if result and result.user_answer == choice %}checked{% endif %} {% if not allow_submit %}disabled{% endif %}>
-                      <span class="text-sm text-slate-800">{{ choice }}</span>
+                        {% if result and result.user_answer == choice %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
+                      <span class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ choice }}</span>
                     </label>
                   {% endfor %}
                 </div>
               {% elif question.question_type == 'true_false' %}
                 <div class="space-y-3">
-                  <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == 'true' %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
+                  <label class="option-card {% if result and result.user_answer == 'true' %}is-checked{% endif %}">
                     <input type="radio" name="q_{{ question.id }}" value="true" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      {% if result and result.user_answer == "true" %}checked{% endif %} {% if not allow_submit %}disabled{% endif %}>
-                    <span class="text-sm text-slate-800">True</span>
+                      {% if result and result.user_answer == "true" %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
+                    <span class="text-sm font-medium text-slate-800 dark:text-slate-100">True</span>
                   </label>
-                  <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 {% if result and result.user_answer == 'false' %}border-indigo-200 bg-indigo-50{% else %}bg-slate-50{% endif %}">
+                  <label class="option-card {% if result and result.user_answer == 'false' %}is-checked{% endif %}">
                     <input type="radio" name="q_{{ question.id }}" value="false" class="h-4 w-4 border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      {% if result and result.user_answer == "false" %}checked{% endif %} {% if not allow_submit %}disabled{% endif %}>
-                    <span class="text-sm text-slate-800">False</span>
+                      {% if result and result.user_answer == "false" %}checked{% endif %} {% if submitted or not allow_submit %}disabled{% endif %}>
+                    <span class="text-sm font-medium text-slate-800 dark:text-slate-100">False</span>
                   </label>
                 </div>
               {% else %}
@@ -201,4 +201,22 @@
   })();
 </script>
 {% endif %}
+
+<script>
+  (function () {
+    function syncGroup(name) {
+      document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+        const card = input.closest('.option-card');
+        if (card) {
+          card.classList.toggle('is-checked', input.checked);
+        }
+      });
+    }
+
+    document.querySelectorAll('.option-card input[type="radio"]').forEach((input) => {
+      syncGroup(input.name);
+      input.addEventListener('change', () => syncGroup(input.name));
+    });
+  })();
+</script>
 {% endblock %}

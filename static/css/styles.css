@@ -371,6 +371,27 @@ body {
   color: #bfdbfe;
 }
 
+#id_show_answers {
+  accent-color: #4f46e5; /* match assign button */
+}
+
+#id_show_answers:checked {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  accent-color: #4f46e5;
+  --tw-ring-color: #4f46e5;
+}
+
+.dark form#quiz-form input[type="radio"] {
+  accent-color: #4f46e5;
+}
+
+.dark form#quiz-form input[type="radio"]:checked {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  --tw-ring-color: #4f46e5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     transition-duration: 0s !important;
